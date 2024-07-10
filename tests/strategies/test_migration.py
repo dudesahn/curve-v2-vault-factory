@@ -129,7 +129,7 @@ def test_migration(
             increase_time(chain, 86400 * 7)
 
         # do the claim for both FXN and FRAX strategies
-        user_vault = interface.IFraxVault(strategy.userVault())
+        user_vault = Contract(strategy.userVault(), abi="abis/IFraxVault.json")
         user_vault.getReward(sender=gov)
 
     # we don't need to do this, but good to do so for checking on our CRV

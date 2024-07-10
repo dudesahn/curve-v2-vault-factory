@@ -183,12 +183,10 @@ def test_keepers_and_trade_handler(
     strategy.updateTradeFactory(trade_factory, sender=gov)
 
     # update our rewards again, shouldn't really change things
-    if which_strategy == 4:
+    if which_strategy in [0, 4]:  # convex and frax auto-update, prisma has no rewards
         tx = strategy.updateRewards(sender=gov)
         print("Tx ID:", tx)
-    elif which_strategy == 0:
-        tx = strategy.updateRewards(sender=gov)
-    elif which_strategy == 1:
+    elif which_strategy in [1, 3]:  # Curve and FXN input the array
         strategy.updateRewards([], sender=gov)
 
     # check out our rewardsTokens
@@ -197,15 +195,17 @@ def test_keepers_and_trade_handler(
             # for convex, 0 position may be occupied by wrapped CVX token
             with ape.reverts():
                 strategy.rewardsTokens(1)
-        if which_strategy in [1, 3, 4]:
+        if which_strategy in [
+            1,
+            3,
+            4,
+        ]:  # Curve and FXN start empty, Frax auto-skips CRV/CVX/FXS
             with ape.reverts():
                 strategy.rewardsTokens(0)
-
         # only vault managers can update rewards, prisma doesn't have extra rewards
-        if which_strategy != 2:
-            if which_strategy != 1:
-                with ape.reverts():
-                    strategy.updateRewards(sender=whale)
-            else:
-                with ape.reverts():
-                    strategy.updateRewards([], sender=whale)
+        if which_strategy in [1, 3]:
+            with ape.reverts():
+                strategy.updateRewards([], sender=whale)
+        if which_strategy in [0, 4]:
+            with ape.reverts():
+                strategy.updateRewards(sender=whale)

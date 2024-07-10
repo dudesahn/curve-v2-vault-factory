@@ -4,8 +4,6 @@ import pytest
 
 
 # test our harvest triggers
-# for frax, skip this when trying coverage
-@pytest.mark.skip_coverage
 def test_triggers(
     gov,
     token,
@@ -25,7 +23,6 @@ def test_triggers(
     use_yswaps,
     which_strategy,
 ):
-    # frax strategy gets stuck on these views, so we call them instead
     if which_strategy == 4:
         # inactive strategy (0 DR and 0 assets) shouldn't be touched by keepers
         currentDebtRatio = vault.strategies(strategy)["debtRatio"]
@@ -39,7 +36,7 @@ def test_triggers(
             profit_amount,
             target,
         )
-        tx = strategy.harvestTrigger.call(0, sender=gov)
+        tx = strategy.harvestTrigger(0)
         print("\nShould we harvest? Should be false.", tx)
         assert tx == False
         vault.updateStrategyDebtRatio(strategy, currentDebtRatio, sender=gov)
@@ -53,14 +50,14 @@ def test_triggers(
 
         # update our min credit so harvest triggers true
         strategy.setCreditThreshold(1, sender=gov)
-        tx = strategy.harvestTrigger.call(0, sender=gov)
+        tx = strategy.harvestTrigger(0)
         print("\nShould we harvest? Should be true.", tx)
         assert tx == True
         strategy.setCreditThreshold(10**24, sender=gov)
 
         # test our manual harvest trigger
         strategy.setForceHarvestTriggerOnce(True, sender=gov)
-        tx = strategy.harvestTrigger.call(0, sender=gov)
+        tx = strategy.harvestTrigger(0)
         print("\nShould we harvest? Should be true.", tx)
         assert tx == True
 
@@ -76,7 +73,7 @@ def test_triggers(
         )
 
         # should trigger false, nothing is ready yet, just harvested
-        tx = strategy.harvestTrigger.call(0, sender=gov)
+        tx = strategy.harvestTrigger(0)
         print("\nShould we harvest? Should be false.", tx)
         assert tx == False
 
@@ -96,13 +93,13 @@ def test_triggers(
         if not (is_slippery and no_profit):
             # update our minProfit so our harvest triggers true
             strategy.setHarvestTriggerParams(1, 1_000_000 * 10**6, False, sender=gov)
-            tx = strategy.harvestTrigger.call(0, sender=gov)
+            tx = strategy.harvestTrigger(0)
             print("\nShould we harvest? Should be true.", tx)
             assert tx == True
 
             # update our maxProfit so harvest triggers true
             strategy.setHarvestTriggerParams(1_000_000 * 10**6, 1, False, sender=gov)
-            tx = strategy.harvestTrigger.call(0, sender=gov)
+            tx = strategy.harvestTrigger(0)
             print("\nShould we harvest? Should be true.", tx)
             assert tx == True
             strategy.setHarvestTriggerParams(
@@ -111,7 +108,7 @@ def test_triggers(
 
         # set our max delay to 1 day so we trigger true, then set it back to 21 days
         strategy.setMaxReportDelay(sleep_time - 1, sender=gov)
-        tx = strategy.harvestTrigger.call(0, sender=gov)
+        tx = strategy.harvestTrigger(0)
         print("\nShould we harvest? Should be True.", tx)
         assert tx == True
         strategy.setMaxReportDelay(86400 * 21)
@@ -131,7 +128,7 @@ def test_triggers(
 
         # harvest should trigger false because of oracle
         base_fee_oracle.setManualBaseFeeBool(False, sender=gov)
-        tx = strategy.harvestTrigger.call(0, sender=gov)
+        tx = strategy.harvestTrigger(0)
         print("\nShould we harvest? Should be false.", tx)
         assert tx == False
         base_fee_oracle.setManualBaseFeeBool(True, sender=gov)

@@ -63,20 +63,20 @@ def which_strategy():
     # prisma convex: 2
     # fxn convex: 3
     # Only test 4 (Frax) for pools that actually have frax.
-    which_strategy = 1
+    which_strategy = 3
     yield which_strategy
 
 
 @pytest.fixture(scope="session")
 def token_string():
-    id_number = 2
+    id_number = 10
     token_string = "ERROR"
     if id_number == 0:
-        token_string = "yPRISMA"  # working 7/9/24 w/ 2 (ape)
+        token_string = "yPRISMA"  # working 7/9/24 w/ 2 (prisma, ape)
     elif id_number == 1:
         token_string = "cvxPRISMA"
     elif id_number == 2:
-        token_string = "cvxCRV New"  # working 7/8/24 w/ 0-1 (ape)
+        token_string = "cvxCRV New"  # working 7/9/24 w/ 0-1 (convex/curve, ape) (still need to fix em exit convex 1)
     elif id_number == 3:
         token_string = "stETH"
     elif id_number == 4:
@@ -92,9 +92,11 @@ def token_string():
     elif id_number == 9:
         token_string = "frxETH-ng"
     elif id_number == 10:
-        token_string = "GHO-fxUSD"  # working 7/8/24 w/ 3 (brownie)
+        token_string = (
+            "GHO-fxUSD"  # working 7/9/24 w/ 3 (fxn, ape, failing em exit stuff)
+        )
     elif id_number == 11:
-        token_string = "CurveLend-WETH"  # working 7/8/24 w/ 0-1 (ape, still need to fix em exit convex)
+        token_string = "CurveLend-WETH"  # working 7/9/24 w/ 0-1 (convex/curve, ape) (still need to fix em exit convex 1)
     yield token_string
 
 
@@ -594,6 +596,8 @@ def strategy(
         vault.addStrategy(strategy, 10_000, 0, 2**256 - 1, 0, sender=gov)
         print("New Vault, Convex FXN Strategy")
         increase_time(chain, 1)
+        user_vault = Contract(strategy.userVault(), abi="abis/IFraxVault.json")
+        user_vault.balance += 10 * 10**18
 
     else:  # frax
         vault.addStrategy(strategy, 10_000, 0, 2**256 - 1, 0, sender=gov)

@@ -98,7 +98,7 @@ def test_emergency_exit(
     # also, FXS profit accrues every block, so we will still get some dust rewards after we exit as well if we were to call getReward() again
     # similarly, for FXN strategies, we need to manually claim rewards from the user vault
     if which_strategy in [3, 4]:
-        user_vault = interface.IFraxVault(strategy.userVault())
+        user_vault = Contract(strategy.userVault(), abi="abis/IFraxVault.json")
         user_vault.getReward(sender=gov)
 
     # again, harvests in emergency exit don't enter prepareReturn, so we need to tell the voter to send funds manually
@@ -286,7 +286,7 @@ def test_emergency_exit_with_profit(
     # also, FXS profit accrues every block, so we will still get some dust rewards after we exit as well if we were to call getReward() again
     # similarly, for FXN strategies, we need to manually claim rewards from the user vault
     if which_strategy in [3, 4]:
-        user_vault = interface.IFraxVault(strategy.userVault())
+        user_vault = Contract(strategy.userVault(), abi="abis/IFraxVault.json")
         user_vault.getReward(sender=gov)
 
     # again, harvests in emergency exit don't enter prepareReturn, so we need to tell the voter to send funds manually
@@ -462,7 +462,7 @@ def test_emergency_exit_with_loss(
         assert strategy.estimatedTotalAssets() == 0
     elif which_strategy == 3:
         # userVault sends away all of the gauge tokens
-        user_vault = strategy.userVault()
+        user_vault = Contract(strategy.userVault(), abi="abis/IFraxVault.json")
         fxn_gauge = Contract(strategy.fxnGauge())
         to_send = fxn_gauge.balanceOf(user_vault)
         fxn_gauge.transfer(gov, to_send, sender=user_vault)
@@ -536,7 +536,7 @@ def test_emergency_exit_with_loss(
     # also, FXS profit accrues every block, so we will still get some dust rewards after we exit as well if we were to call getReward() again
     # similarly, for FXN strategies, we need to manually claim rewards from the user vault
     if which_strategy in [3, 4]:
-        user_vault = interface.IFraxVault(strategy.userVault())
+        user_vault = Contract(strategy.userVault(), abi="abis/IFraxVault.json")
         user_vault.getReward(sender=gov)
 
     # again, harvests in emergency exit don't enter prepareReturn, so we need to tell the voter to send funds manually
@@ -726,7 +726,7 @@ def test_emergency_exit_with_no_loss(
         prisma_receiver.withdraw(gov, to_send, sender=strategy)
     elif which_strategy == 3:
         # userVault sends away all of the gauge tokens
-        user_vault = strategy.userVault()
+        user_vault = Contract(strategy.userVault(), abi="abis/IFraxVault.json")
         fxn_gauge = Contract(strategy.fxnGauge())
         to_send = fxn_gauge.balanceOf(user_vault)
         fxn_gauge.transfer(gov, to_send, sender=user_vault)
@@ -812,7 +812,7 @@ def test_emergency_exit_with_no_loss(
     # also, FXS profit accrues every block, so we will still get some dust rewards after we exit as well if we were to call getReward() again
     # similarly, for FXN strategies, we need to manually claim rewards from the user vault
     if which_strategy in [3, 4]:
-        user_vault = interface.IFraxVault(strategy.userVault())
+        user_vault = Contract(strategy.userVault(), abi="abis/IFraxVault.json")
         user_vault.getReward(sender=gov)
 
     # again, harvests in emergency exit don't enter prepareReturn, so we need to tell the voter to send funds manually
