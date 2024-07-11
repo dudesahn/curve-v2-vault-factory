@@ -203,7 +203,7 @@ contract StrategyPrismaConvexFactoryClonable is BaseStrategy {
         harvestProfitMaxInUsdc = 200_000e6;
 
         // want = Curve LP
-        want.approve(address(_prismaReceiver), type(uint256).max);
+        want.forceApprove(address(_prismaReceiver), type(uint256).max);
 
         // set up our baseStrategy vars
         maxReportDelay = 365 days;
@@ -527,9 +527,9 @@ contract StrategyPrismaConvexFactoryClonable is BaseStrategy {
         address _tradeFactory = tradeFactory;
         address _want = address(want);
 
-        crv.approve(_tradeFactory, type(uint256).max);
-        convexToken.approve(_tradeFactory, type(uint256).max);
-        yPrisma.approve(_tradeFactory, type(uint256).max);
+        crv.forceApprove(_tradeFactory, type(uint256).max);
+        convexToken.forceApprove(_tradeFactory, type(uint256).max);
+        yPrisma.forceApprove(_tradeFactory, type(uint256).max);
 
         ITradeFactory tf = ITradeFactory(_tradeFactory);
         tf.enable(address(convexToken), _want);
@@ -557,17 +557,17 @@ contract StrategyPrismaConvexFactoryClonable is BaseStrategy {
         ITradeFactory tf = ITradeFactory(_tradeFactory);
 
         address _want = address(want);
-        crv.approve(_tradeFactory, 0);
+        crv.forceApprove(_tradeFactory, 0);
         if (_disableTf) {
             tf.disable(address(crv), _want);
         }
 
-        convexToken.approve(_tradeFactory, 0);
+        convexToken.forceApprove(_tradeFactory, 0);
         if (_disableTf) {
             tf.disable(address(convexToken), _want);
         }
 
-        yPrisma.approve(_tradeFactory, 0);
+        yPrisma.forceApprove(_tradeFactory, 0);
         if (_disableTf) {
             tf.disable(address(yPrisma), _want);
         }

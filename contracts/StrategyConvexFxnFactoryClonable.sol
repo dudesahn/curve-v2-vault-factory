@@ -159,7 +159,7 @@ contract StrategyConvexFxnFactoryClonable is BaseStrategy {
         userVault = IConvexFxn(fxnBooster.createVault(_fxnPid));
 
         // want = Curve LP
-        want.approve(address(userVault), type(uint256).max);
+        want.forceApprove(address(userVault), type(uint256).max);
 
         // set up our baseStrategy vars
         minReportDelay = 3650 days;
@@ -386,7 +386,7 @@ contract StrategyConvexFxnFactoryClonable is BaseStrategy {
             tf.enable(_rewardsToken, _want);
         }
 
-        fxn.approve(_tradeFactory, type(uint256).max);
+        fxn.forceApprove(_tradeFactory, type(uint256).max);
         tf.enable(address(fxn), _want);
     }
 
@@ -414,13 +414,13 @@ contract StrategyConvexFxnFactoryClonable is BaseStrategy {
         // disable for any other rewards tokens too
         for (uint256 i; i < rewardsTokens.length; ++i) {
             address _rewardsToken = rewardsTokens[i];
-            IERC20(_rewardsToken).approve(_tradeFactory, 0);
+            IERC20(_rewardsToken).forceApprove(_tradeFactory, 0);
             if (_disableTf) {
                 tf.disable(_rewardsToken, _want);
             }
         }
 
-        fxn.approve(_tradeFactory, 0);
+        fxn.forceApprove(_tradeFactory, 0);
         if (_disableTf) {
             tf.disable(address(fxn), _want);
         }

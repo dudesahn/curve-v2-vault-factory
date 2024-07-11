@@ -378,7 +378,7 @@ contract StrategyCurveBoostedFactoryClonable is BaseStrategy {
         address _want = address(want);
 
         ITradeFactory tf = ITradeFactory(_tradeFactory);
-        crv.approve(_tradeFactory, type(uint256).max);
+        crv.forceApprove(_tradeFactory, type(uint256).max);
         tf.enable(address(crv), _want);
 
         // enable for all rewards tokens too
@@ -416,7 +416,7 @@ contract StrategyCurveBoostedFactoryClonable is BaseStrategy {
         ITradeFactory tf = ITradeFactory(_tradeFactory);
 
         address _want = address(want);
-        crv.approve(_tradeFactory, 0);
+        crv.forceApprove(_tradeFactory, 0);
         if (_disableTf) {
             tf.disable(address(crv), _want);
         }
@@ -424,7 +424,7 @@ contract StrategyCurveBoostedFactoryClonable is BaseStrategy {
         // disable for all rewards tokens too
         for (uint256 i; i < rewardsTokens.length; ++i) {
             address _rewardsToken = rewardsTokens[i];
-            IERC20(_rewardsToken).approve(_tradeFactory, 0);
+            IERC20(_rewardsToken).forceApprove(_tradeFactory, 0);
             if (_disableTf) {
                 tf.disable(_rewardsToken, _want);
             }

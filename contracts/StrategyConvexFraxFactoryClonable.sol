@@ -277,7 +277,7 @@ contract StrategyConvexFraxFactoryClonable is BaseStrategy {
         fxs = IERC20(userVault.fxs());
 
         // want = Curve LP
-        want.approve(address(userVault), type(uint256).max);
+        want.forceApprove(address(userVault), type(uint256).max);
 
         // set up our baseStrategy vars
         maxReportDelay = 365 days;
@@ -662,9 +662,9 @@ contract StrategyConvexFraxFactoryClonable is BaseStrategy {
 
     /**
      * @notice Use to add or update rewards, rebuilds tradefactory too
-     * @dev Do this before updating trade factory if we have extra rewards. Can only be called by governance.
+     * @dev Do this before updating trade factory if we have extra rewards.
      */
-    function updateRewards() external onlyGovernance {
+    function updateRewards() external onlyVaultManagers {
         address tf = tradeFactory;
         _removeTradeFactoryPermissions(true);
         _updateRewards();
@@ -714,20 +714,23 @@ contract StrategyConvexFraxFactoryClonable is BaseStrategy {
         address _want = address(want);
 
         ITradeFactory tf = ITradeFactory(_tradeFactory);
-        crv.approve(_tradeFactory, type(uint256).max);
+        crv.forceApprove(_tradeFactory, type(uint256).max);
         tf.enable(address(crv), _want);
 
         // enable if we have anything else
         for (uint256 i; i < rewardsTokens.length; ++i) {
             address _rewardsToken = rewardsTokens[i];
-            IERC20(_rewardsToken).approve(_tradeFactory, type(uint256).max);
+            IERC20(_rewardsToken).forceApprove(
+                _tradeFactory,
+                type(uint256).max
+            );
             tf.enable(_rewardsToken, _want);
         }
 
-        convexToken.approve(_tradeFactory, type(uint256).max);
+        convexToken.forceApprove(_tradeFactory, type(uint256).max);
         tf.enable(address(convexToken), _want);
 
-        fxs.approve(_tradeFactory, type(uint256).max);
+        fxs.forceApprove(_tradeFactory, type(uint256).max);
         tf.enable(address(fxs), _want);
     }
 
@@ -751,7 +754,7 @@ contract StrategyConvexFraxFactoryClonable is BaseStrategy {
         ITradeFactory tf = ITradeFactory(_tradeFactory);
 
         address _want = address(want);
-        crv.approve(_tradeFactory, 0);
+        crv.forceApprove(_tradeFactory, 0);
         if (_disableTf) {
             tf.disable(address(crv), _want);
         }
@@ -759,18 +762,18 @@ contract StrategyConvexFraxFactoryClonable is BaseStrategy {
         // disable for any other rewards tokens too
         for (uint256 i; i < rewardsTokens.length; ++i) {
             address _rewardsToken = rewardsTokens[i];
-            IERC20(_rewardsToken).approve(_tradeFactory, 0);
+            IERC20(_rewardsToken).forceApprove(_tradeFactory, 0);
             if (_disableTf) {
                 tf.disable(_rewardsToken, _want);
             }
         }
 
-        convexToken.approve(_tradeFactory, 0);
+        convexToken.forceApprove(_tradeFactory, 0);
         if (_disableTf) {
             tf.disable(address(convexToken), _want);
         }
 
-        fxs.approve(_tradeFactory, 0);
+        fxs.forceApprove(_tradeFactory, 0);
         if (_disableTf) {
             tf.disable(address(fxs), _want);
         }
