@@ -36,7 +36,7 @@ def test_liquidatePosition(
     starting_whale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -248,7 +248,7 @@ def test_rekt(
     starting_whale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -321,7 +321,7 @@ def test_rekt(
     # set debtRatio to zero so we try and pull everything that we can out. turn off health check because of massive losses
     vault.updateStrategyDebtRatio(strategy, 0, sender=gov)
     strategy.setDoHealthCheck(False, sender=gov)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -411,7 +411,7 @@ def test_empty_strat(
     starting_whale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -530,7 +530,7 @@ def test_empty_strat(
 
     # accept our losses, sad day 🥲
     strategy.setDoHealthCheck(False, sender=gov)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -572,7 +572,7 @@ def test_empty_strat(
     print("\nAfter our donation")
     strategy_params = check_status(strategy, vault)
     strategy.setDoHealthCheck(False, sender=gov)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -605,7 +605,7 @@ def test_no_profit(
     ## deposit to the vault after approving
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -626,7 +626,7 @@ def test_no_profit(
 
     # if are using yswaps and we don't want profit, don't use yswaps (False for first argument).
     # Or just don't harvest our destination strategy, can pass 0 for profit_amount and use if statement in utils
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         False,
         strategy,
         token,

@@ -37,7 +37,7 @@ def test_simple_harvest(
         strategy.setDepositParams(0, amount / 10, False, sender=gov)
 
     # harvest, store asset amount
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -116,7 +116,7 @@ def test_simple_harvest(
         )
 
     # harvest, store new asset amount
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -137,7 +137,7 @@ def test_simple_harvest(
     # harvest again so the strategy reports the profit
     if use_yswaps:
         print("Using ySwaps for harvests")
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -234,7 +234,7 @@ def test_check_rewards(
     vault.deposit(amount, sender=whale)
 
     # harvest
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -273,7 +273,7 @@ def test_check_rewards(
         increase_time(chain, sleep_time)
 
     # harvest
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -285,7 +285,7 @@ def test_check_rewards(
 
     if use_yswaps:
         # harvest
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -304,7 +304,7 @@ def test_check_rewards(
         strategy.setDoHealthCheck(False, sender=gov)
 
     # harvest
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -323,7 +323,7 @@ def test_check_rewards(
 
     if use_yswaps:
         # harvest
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,

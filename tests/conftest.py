@@ -92,9 +92,7 @@ def token_string():
     elif id_number == 9:
         token_string = "frxETH-ng"
     elif id_number == 10:
-        token_string = (
-            "GHO-fxUSD"  # working 7/9/24 w/ 3 (fxn, ape, failing em exit stuff)
-        )
+        token_string = "GHO-fxUSD"  # working 7/9/24 w/ 3 (fxn, ape)
     elif id_number == 11:
         token_string = "CurveLend-WETH"  # working 7/9/24 w/ 0-1 (convex/curve, ape) (still need to fix em exit convex 1)
     yield token_string

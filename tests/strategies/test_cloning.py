@@ -52,7 +52,7 @@ def test_cloning(
     starting_whale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -422,7 +422,7 @@ def test_cloning(
         # wait another week so our frax LPs are unlocked, need to do this when reducing debt or withdrawing
         increase_time(chain, 86400 * 7)
 
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -444,7 +444,7 @@ def test_cloning(
         new_proxy.approveStrategy(strategy.gauge(), new_strategy, sender=gov)
 
     # harvest, store asset amount
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         new_strategy,
         token,
@@ -462,7 +462,7 @@ def test_cloning(
     increase_time(chain, sleep_time)
 
     # harvest after a day, store new asset amount
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         new_strategy,
         token,
@@ -476,7 +476,7 @@ def test_cloning(
     if which_strategy == 1:
         if not tests_using_tenderly:
             with ape.reverts("revert: !strategy"):
-                (profit, loss) = harvest_strategy(
+                (profit, loss, extra) = harvest_strategy(
                     use_yswaps,
                     strategy,
                     token,
@@ -489,7 +489,7 @@ def test_cloning(
     # harvest again so the strategy reports the profit
     if use_yswaps:
         print("Using ySwaps for harvests")
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             new_strategy,
             token,

@@ -42,7 +42,7 @@ def test_migration(
     ## deposit to the vault after approving
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -177,7 +177,7 @@ def test_migration(
     assert updated_total_old == 0
 
     # harvest to get funds back in new strategy
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         new_strategy,
         token,
@@ -201,7 +201,7 @@ def test_migration(
     increase_time(chain, sleep_time)
 
     # Test out our migrated strategy, confirm we're making a profit
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         new_strategy,
         token,
@@ -257,7 +257,7 @@ def test_empty_migration(
     ## deposit to the vault after approving
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -328,7 +328,7 @@ def test_empty_migration(
 
     # set our debtRatio to zero so our harvest sends all funds back to vault
     vault.updateStrategyDebtRatio(strategy, 0, sender=gov)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -340,7 +340,7 @@ def test_empty_migration(
 
     # yswaps needs another harvest to get the final bit of profit to the vault
     if use_yswaps:
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -358,7 +358,7 @@ def test_empty_migration(
 
         # turn off health check since taking profit on no debt
         strategy.setDoHealthCheck(False, sender=gov)
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,

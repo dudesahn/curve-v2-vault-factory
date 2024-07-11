@@ -78,18 +78,23 @@ def harvest_strategy(
         assert strategy.balanceOfWant() == 0
 
     # our trade handler takes action, sending out rewards tokens and sending back in profit
+    extra = 0
     if use_yswaps:
-        trade_handler_action(strategy, token, gov, profit_whale, profit_amount, target)
+        extra = trade_handler_action(
+            strategy, token, gov, profit_whale, profit_amount, target
+        )
 
     if gov == 9:
-        trade_handler_action(strategy, token, gov, profit_whale, profit_amount, target)
-        return (0, 0)
+        extra = trade_handler_action(
+            strategy, token, gov, profit_whale, profit_amount, target
+        )
+        return (0, 0, extra)
 
     # reset everything with a sleep and mine
     increase_time(chain, 60)
 
     # return our profit, loss
-    return (profit, loss)
+    return (profit, loss, extra)
 
 
 # simulate the trade handler sweeping out assets and sending back profit
@@ -157,6 +162,15 @@ def trade_handler_action(
         print("\n🧮 FXN rewards present:", fxnBalance / 1e18, "\n")
         assert fxn.balanceOf(strategy) == 0
 
+    if target in [0, 1]:
+        extra = crvBalance
+    elif target == 2:
+        extra = yprismaBalance
+    elif target == 3:
+        extra = fxnBalance
+    else:
+        extra = fxsBalance
+
     # send our profits back in
     if (
         crvBalance > 0
@@ -168,6 +182,9 @@ def trade_handler_action(
         token.transfer(strategy, profit_amount, sender=profit_whale)
         print("Rewards converted into profit and returned")
         assert strategy.balanceOfWant() > 0
+
+    # pass back how much of our relevant profit token we had in the strategy
+    return extra
 
 
 # do a check on our strategy and vault of choice

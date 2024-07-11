@@ -27,7 +27,7 @@ def test_triggers(
         # inactive strategy (0 DR and 0 assets) shouldn't be touched by keepers
         currentDebtRatio = vault.strategies(strategy)["debtRatio"]
         vault.updateStrategyDebtRatio(strategy, 0, sender=gov)
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -62,7 +62,7 @@ def test_triggers(
         assert tx == True
 
         # harvest the credit
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -114,7 +114,7 @@ def test_triggers(
         strategy.setMaxReportDelay(86400 * 21)
 
         # harvest, wait
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -135,7 +135,7 @@ def test_triggers(
 
         # harvest again to get the last of our profit with ySwaps
         if use_yswaps:
-            (profit, loss) = harvest_strategy(
+            (profit, loss, extra) = harvest_strategy(
                 use_yswaps,
                 strategy,
                 token,
@@ -160,7 +160,7 @@ def test_triggers(
         # inactive strategy (0 DR and 0 assets) shouldn't be touched by keepers
         currentDebtRatio = vault.strategies(strategy)["debtRatio"]
         vault.updateStrategyDebtRatio(strategy, 0, sender=gov)
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -195,7 +195,7 @@ def test_triggers(
         assert tx == True
 
         # harvest the credit
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -300,7 +300,7 @@ def test_triggers(
             assert tx == True
 
         # harvest, wait
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -321,7 +321,7 @@ def test_triggers(
 
         # harvest again to get the last of our profit with ySwaps
         if use_yswaps:
-            (profit, loss) = harvest_strategy(
+            (profit, loss, extra) = harvest_strategy(
                 use_yswaps,
                 strategy,
                 token,

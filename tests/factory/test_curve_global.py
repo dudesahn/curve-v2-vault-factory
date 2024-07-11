@@ -246,7 +246,7 @@ def test_vault_deployment(
 
     # harvest, pass 9 to gov so we know this is a permissionless harvest
     keeper_wrapper.harvest(convex_strategy, sender=rando)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         convex_strategy,
         token,
@@ -258,7 +258,7 @@ def test_vault_deployment(
 
     if curve_strat != ZERO_ADDRESS:
         keeper_wrapper.harvest(curve_strategy, sender=rando)
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             curve_strategy,
             token,
@@ -269,7 +269,7 @@ def test_vault_deployment(
         )
     if frax_strat != ZERO_ADDRESS:
         keeper_wrapper.harvest(frax_strategy, sender=rando)
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             frax_strategy,
             token,
@@ -297,7 +297,7 @@ def test_vault_deployment(
         print("But only gov/management can adjust debt ratios")
 
         keeper_wrapper.harvest(frax_strategy, sender=rando)
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             frax_strategy,
             token,
@@ -310,7 +310,7 @@ def test_vault_deployment(
         # harvest again so the strategy reports the profit
         if use_yswaps:
             print("Using ySwaps for harvests")
-            (profit, loss) = harvest_strategy(
+            (profit, loss, extra) = harvest_strategy(
                 use_yswaps,
                 frax_strategy,
                 token,
@@ -330,7 +330,7 @@ def test_vault_deployment(
         print("But only gov/management can adjust debt ratios")
 
         keeper_wrapper.harvest(convex_strategy, sender=rando)
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             convex_strategy,
             token,
@@ -343,7 +343,7 @@ def test_vault_deployment(
         # harvest again so the strategy reports the profit
         if use_yswaps:
             print("Using ySwaps for harvests")
-            (profit, loss) = harvest_strategy(
+            (profit, loss, extra) = harvest_strategy(
                 use_yswaps,
                 convex_strategy,
                 token,

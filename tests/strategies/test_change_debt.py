@@ -24,7 +24,7 @@ def test_change_debt(
     starting_whale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -69,7 +69,7 @@ def test_change_debt(
         increase_time(chain, 86400 * 7)
 
     # harvest to reduce our debt, send 50% of funds back to vault
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -142,7 +142,7 @@ def test_change_debt(
         increase_time(chain, 86400 * 7)
 
     # harvest to send our funds back to the strategy
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -232,7 +232,7 @@ def test_change_debt_with_profit(
     ## deposit to the vault after approving
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -293,7 +293,7 @@ def test_change_debt_with_profit(
         increase_time(chain, 86400 * 7)
 
     # harvest to reduce our debt, send 50% of funds back to vault
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,

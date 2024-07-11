@@ -36,7 +36,7 @@ def test_keepers_and_trade_handler(
     newWhale = token.balanceOf(whale)
 
     # harvest, store asset amount
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -50,7 +50,7 @@ def test_keepers_and_trade_handler(
     increase_time(chain, sleep_time)
 
     # harvest, store new asset amount
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,

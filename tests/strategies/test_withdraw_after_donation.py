@@ -28,7 +28,7 @@ def test_withdraw_after_donation_1(
     ## deposit to the vault after approving
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -118,7 +118,7 @@ def test_withdraw_after_donation_1(
 
     # after our donation, best to use health check in case our donation profit is too big
     strategy.setDoHealthCheck(False, sender=gov)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -153,7 +153,7 @@ def test_withdraw_after_donation_1(
     if use_yswaps:
         print("Using ySwaps for harvests")
         old_gain = strategy_params["totalGain"]
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -252,7 +252,7 @@ def test_withdraw_after_donation_2(
     ## deposit to the vault after approving
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -338,7 +338,7 @@ def test_withdraw_after_donation_2(
 
     # after our donation, best to use health check in case our donation profit is too big
     strategy.setDoHealthCheck(False, sender=gov)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -372,7 +372,7 @@ def test_withdraw_after_donation_2(
     if use_yswaps:
         print("Using ySwaps for harvests")
         old_gain = strategy_params["totalGain"]
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -460,7 +460,7 @@ def test_withdraw_after_donation_3(
     ## deposit to the vault after approving
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -546,7 +546,7 @@ def test_withdraw_after_donation_3(
 
     # after our donation, best to use health check in case we have a big profit
     strategy.setDoHealthCheck(False, sender=gov)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -580,7 +580,7 @@ def test_withdraw_after_donation_3(
     if use_yswaps:
         print("Using ySwaps for harvests")
         old_gain = strategy_params["totalGain"]
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -668,7 +668,7 @@ def test_withdraw_after_donation_4(
     ## deposit to the vault after approving
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -758,7 +758,7 @@ def test_withdraw_after_donation_4(
 
     # after our donation, best to use health check in case we have a big profit
     strategy.setDoHealthCheck(False, sender=gov)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -793,7 +793,7 @@ def test_withdraw_after_donation_4(
     if use_yswaps:
         print("Using ySwaps for harvests")
         old_gain = strategy_params["totalGain"]
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -892,7 +892,7 @@ def test_withdraw_after_donation_5(
     ## deposit to the vault after approving
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -961,7 +961,7 @@ def test_withdraw_after_donation_5(
 
     # after our donation, best to use health check in case we have a big profit
     strategy.setDoHealthCheck(False, sender=gov)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -996,7 +996,7 @@ def test_withdraw_after_donation_5(
     if use_yswaps:
         print("Using ySwaps for harvests")
         old_gain = strategy_params["totalGain"]
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -1093,7 +1093,7 @@ def test_withdraw_after_donation_6(
     ## deposit to the vault after approving
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -1162,7 +1162,7 @@ def test_withdraw_after_donation_6(
 
     # after our donation, best to use health check in case we have a big profit
     strategy.setDoHealthCheck(False, sender=gov)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -1197,7 +1197,7 @@ def test_withdraw_after_donation_6(
     if use_yswaps:
         print("Using ySwaps for harvests")
         old_gain = strategy_params["totalGain"]
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -1295,7 +1295,7 @@ def test_withdraw_after_donation_7(
     ## deposit to the vault after approving
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -1382,7 +1382,7 @@ def test_withdraw_after_donation_7(
 
     # after our donation, best to use health check in case our donation profit is too big
     strategy.setDoHealthCheck(False, sender=gov)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -1416,7 +1416,7 @@ def test_withdraw_after_donation_7(
     if use_yswaps:
         print("Using ySwaps for harvests")
         old_gain = strategy_params["totalGain"]
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -1528,7 +1528,7 @@ def test_withdraw_after_donation_8(
     ## deposit to the vault after approving
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -1615,7 +1615,7 @@ def test_withdraw_after_donation_8(
 
     # after our donation, best to use health check in case our donation profit is too big
     strategy.setDoHealthCheck(False, sender=gov)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -1649,7 +1649,7 @@ def test_withdraw_after_donation_8(
     if use_yswaps:
         print("Using ySwaps for harvests")
         old_gain = strategy_params["totalGain"]
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,

@@ -22,7 +22,7 @@ def test_remove_from_withdrawal_queue(
     starting_whale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -34,7 +34,7 @@ def test_remove_from_withdrawal_queue(
 
     # simulate earnings, harvest
     increase_time(chain, sleep_time)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -87,7 +87,7 @@ def test_revoke_strategy_from_vault(
     starting_whale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -112,7 +112,7 @@ def test_revoke_strategy_from_vault(
         # wait another week so our frax LPs are unlocked, need to do this when reducing debt or withdrawing
         increase_time(chain, 86400 * 7)
 
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -124,7 +124,7 @@ def test_revoke_strategy_from_vault(
 
     # harvest again to get the last of our profit with ySwaps
     if use_yswaps:
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -231,7 +231,7 @@ def test_setters(
             strategy.setDepositParams(maxToStake, minToStake, False, sender=gov)
 
     # harvest our credit
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -332,7 +332,7 @@ def test_sweep(
     # deposit to the vault after approving
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,

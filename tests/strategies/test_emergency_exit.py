@@ -32,7 +32,7 @@ def test_emergency_exit(
     starting_whale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -54,7 +54,7 @@ def test_emergency_exit(
 
     # simulate earnings
     increase_time(chain, sleep_time)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -111,7 +111,7 @@ def test_emergency_exit(
         strategy.claimRewards(yearn_locker, 5000, sender=gov)
 
     # harvest to send funds back to vault
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -140,7 +140,7 @@ def test_emergency_exit(
     # yswaps needs another harvest to get the final bit of profit to the vault
     if use_yswaps:
         old_gain = strategy_params["totalGain"]
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -218,7 +218,7 @@ def test_emergency_exit_with_profit(
     starting_whale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -240,7 +240,7 @@ def test_emergency_exit_with_profit(
 
     # simulate earnings
     increase_time(chain, sleep_time)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -311,7 +311,7 @@ def test_emergency_exit_with_profit(
         == vault.debtOutstanding(strategy)
     )
 
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -338,8 +338,13 @@ def test_emergency_exit_with_profit(
 
     # yswaps needs another harvest to get the final bit of profit to the vault
     if use_yswaps:
+        # do an extra donation to the strategy, because why not!
+        token.transfer(strategy, profit_amount, sender=profit_whale)
+        # turn off health check since this will be an extra profit from the donation
+        strategy.setDoHealthCheck(False, sender=gov)
+
         old_gain = strategy_params["totalGain"]
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -355,7 +360,7 @@ def test_emergency_exit_with_profit(
 
         # make sure we recorded our gain properly
         if not no_profit:
-            assert strategy_params["totalGain"] > old_gain
+            assert strategy_params["totalGain"] > old_gain + profit_amount
 
     # confirm that the strategy has no funds
     assert strategy.estimatedTotalAssets() == 0
@@ -419,7 +424,7 @@ def test_emergency_exit_with_loss(
     starting_whale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -576,7 +581,7 @@ def test_emergency_exit_with_loss(
         assert initial_debt == initial_strategy_assets
 
     strategy.setDoHealthCheck(False, sender=gov)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -597,9 +602,10 @@ def test_emergency_exit_with_loss(
     assert vault.pricePerShare() == 0
 
     # yswaps needs another harvest to get the final bit of profit to the vault
+    # we should have profit here, since we already took our losses and should have some converted rewards to account for
     if use_yswaps:
         old_gain = strategy_params["totalGain"]
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -683,7 +689,7 @@ def test_emergency_exit_with_no_loss(
     starting_whale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -853,7 +859,7 @@ def test_emergency_exit_with_no_loss(
         assert initial_debt == initial_strategy_assets
 
     # harvest to send all funds back to the vault
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -874,7 +880,7 @@ def test_emergency_exit_with_no_loss(
     # yswaps needs another harvest to get the final bit of profit to the vault
     if use_yswaps:
         old_gain = strategy_params["totalGain"]
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -970,7 +976,7 @@ def test_emergency_shutdown_from_vault(
     starting_whale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -992,7 +998,7 @@ def test_emergency_shutdown_from_vault(
 
     # simulate earnings
     increase_time(chain, sleep_time)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -1038,7 +1044,7 @@ def test_emergency_shutdown_from_vault(
         # wait another week so our frax LPs are unlocked, need to do this when reducing debt or withdrawing
         increase_time(chain, 86400 * 7)
 
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -1066,7 +1072,7 @@ def test_emergency_shutdown_from_vault(
     # harvest again to get the last of our profit with ySwaps
     if use_yswaps:
         old_gain = strategy_params["totalGain"]
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -1160,7 +1166,7 @@ def test_emergency_withdraw_method_0(
     starting_whale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -1266,7 +1272,7 @@ def test_emergency_withdraw_method_0(
     # turn off health check since we're doing weird shit
 
     strategy.setDoHealthCheck(False, sender=gov)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -1289,7 +1295,7 @@ def test_emergency_withdraw_method_0(
     # yswaps needs another harvest to get the final bit of profit to the vault
     if use_yswaps:
         old_gain = strategy_params["totalGain"]
-        (profit, loss) = harvest_strategy(
+        (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
             token,
@@ -1375,7 +1381,7 @@ def test_emergency_withdraw_method_1(
     starting_whale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
     vault.deposit(amount, sender=whale)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
@@ -1481,7 +1487,7 @@ def test_emergency_withdraw_method_1(
 
     # turn off health check since we're doing weird shit
     strategy.setDoHealthCheck(False, sender=gov)
-    (profit, loss) = harvest_strategy(
+    (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
         token,
