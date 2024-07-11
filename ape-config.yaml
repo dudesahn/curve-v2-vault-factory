@@ -6,6 +6,8 @@ plugins:
   - name: hardhat
   - name: infura
   - name: alchemy
+  - name: foundry
+  - name: ens
 
 default_ecosystem: ethereum
 
@@ -13,34 +15,33 @@ dependencies:
   - name: openzeppelin
     github: OpenZeppelin/openzeppelin-contracts
     version: 4.9.5
-
-  - name: tokenized-strategy
-    github: yearn/tokenized-strategy
-    ref: v3.0.2
-    contracts_folder: src
-    exclude: 
-     - test/**/*
-
-  - name: periphery
-    github: yearn/tokenized-strategy-periphery
-    ref: master
-    contracts_folder: src
-    exclude: 
-     - test/**/*
+  - name: yearn
+    github: yearn/yearn-vaults
+    version: 0.4.6
 
 solidity:
   import_remapping:
+    - "@openzeppelin/contracts@4.9.5=openzeppelin/v4.9.5"
     - "@openzeppelin/contracts=openzeppelin/v4.9.5"
-    - "@tokenized-strategy=tokenized-strategy/v3.0.2"
-    - "@periphery=periphery/master"
+    - "github.com/yearn/yearn-vaults/blob/v0.4.6=yearn/v0.4.6"
 
 ethereum:
   default_network: mainnet-fork
   mainnet_fork:
-    default_provider: hardhat
+    default_provider: foundry
+    transaction_acceptance_timeout: 600 # 5 minutes
 
 hardhat:
   fork:
     ethereum:
       mainnet:
-        upstream_provider: infura
+        upstream_provider: alchemy
+
+foundry:
+  priority_fee: 0
+  base_fee: 0
+  gas_price: 0
+  fork:
+    ethereum:
+      mainnet:
+        upstream_provider: alchemy

@@ -1,0 +1,385 @@
+from ape import Contract, chain
+from utils import harvest_strategy, increase_time, check_status
+import pytest
+import ape
+
+# test migrating a strategy
+def test_migration(
+    gov,
+    token,
+    vault,
+    whale,
+    strategy,
+    amount,
+    sleep_time,
+    contract_name,
+    profit_whale,
+    profit_amount,
+    target,
+    trade_factory,
+    use_yswaps,
+    is_slippery,
+    no_profit,
+    which_strategy,
+    pid,
+    new_proxy,
+    booster,
+    convex_token,
+    gauge,
+    crv,
+    frax_booster,
+    frax_pid,
+    staking_address,
+    fxs,
+    prisma_convex_factory,
+    yprisma,
+    prisma_vault,
+    RELATIVE_APPROX,
+    fxn_pid,
+    fxn,
+):
+
+    ## deposit to the vault after approving
+    token.approve(vault, 2**256 - 1, sender=whale)
+    vault.deposit(amount, sender=whale)
+    (profit, loss, extra) = harvest_strategy(
+        use_yswaps,
+        strategy,
+        token,
+        gov,
+        profit_whale,
+        profit_amount,
+        target,
+    )
+
+    # record our current strategy's assets
+    total_old = strategy.estimatedTotalAssets()
+
+    # sleep to collect earnings
+    increase_time(chain, sleep_time)
+
+    ######### THIS WILL NEED TO BE UPDATED BASED ON STRATEGY CONSTRUCTOR #########
+    if which_strategy == 0:  # convex
+        new_strategy = gov.deploy(
+            contract_name,
+            vault,
+            trade_factory,
+            pid,
+            10_000 * 10**6,
+            25_000 * 10**6,
+            booster,
+            convex_token,
+        )
+    elif which_strategy == 1:  # curve
+        new_strategy = gov.deploy(
+            contract_name,
+            vault,
+            trade_factory,
+            new_proxy,
+            gauge,
+        )
+    elif which_strategy == 2:  # prisma convex
+        new_strategy = gov.deploy(
+            contract_name,
+            vault,
+            trade_factory,
+            prisma_vault,
+            prisma_convex_factory.getDeterministicAddress(
+                pid
+            ),  # This looks up the prisma receiver for the pool
+        )
+    elif which_strategy == 3:  # fxn convex
+        new_strategy = gov.deploy(
+            contract_name,
+            vault,
+            trade_factory,
+            fxn_pid,
+        )
+    elif which_strategy == 4:  # frax
+        new_strategy = gov.deploy(
+            contract_name,
+            vault,
+            trade_factory,
+            frax_pid,
+            staking_address,
+            10_000 * 10**6,
+            25_000 * 10**6,
+            frax_booster,
+        )
+
+    # since curve strats auto-detect gauge tokens in voter, all strategies will show the same TVL
+    # this is why we can never have 2 curve strategies for the same gauge, even on different vaults, at the same time
+    if which_strategy != 1:
+        # can we harvest an unactivated strategy? should be no
+        tx = new_strategy.harvestTrigger(0, sender=gov)
+        print("\nShould we harvest? Should be False.", tx)
+        assert tx == False
+
+    # had it skipping for FRAX here too, not sure why tho
+
+    ######### ADD LOGIC TO TEST CLAIMING OF ASSETS FOR TRANSFER TO NEW STRATEGY AS NEEDED #########
+    # for some reason withdrawing via our user vault doesn't include the same getReward() call that the staking pool does natively
+    # since emergencyExit doesn't enter prepareReturn, we have to manually claim these rewards
+    # also, FXS profit accrues every block, so we will still get some dust rewards after we exit as well if we were to call getReward() again
+    if which_strategy in [3, 4]:
+        if which_strategy == 4:
+            with ape.reverts():
+                vault.migrateStrategy(strategy, new_strategy, sender=gov)
+            # wait another week so our frax LPs are unlocked, need to do this when reducing debt or withdrawing
+            increase_time(chain, 86400 * 7)
+
+        # do the claim for both FXN and FRAX strategies
+        user_vault = Contract(strategy.userVault(), abi="abis/IFraxVault.json")
+        user_vault.getReward(sender=gov)
+
+    # we don't need to do this, but good to do so for checking on our CRV
+    if which_strategy == 1:
+        new_proxy.harvest(gauge, sender=strategy)
+
+    # migrate our old strategy, need to claim rewards for convex when withdrawing for convex
+    if which_strategy == 0:
+        strategy.setClaimRewards(True, sender=gov)
+
+    # claim rewards manually for yPRISMA
+    if which_strategy == 2:
+        yearn_locker = "0x90be6DFEa8C80c184C442a36e17cB2439AAE25a7"
+        strategy.claimRewards(yearn_locker, 5000, sender=gov)
+
+    vault.migrateStrategy(strategy, new_strategy, sender=gov)
+
+    # if a curve strat, whitelist on our strategy proxy
+    if which_strategy == 1:
+        new_proxy.approveStrategy(strategy.gauge(), new_strategy, sender=gov)
+
+    ####### ADD LOGIC TO MAKE SURE ASSET TRANSFER WENT AS EXPECTED #######
+    assert crv.balanceOf(strategy) == 0
+    if which_strategy not in [2, 3]:
+        assert crv.balanceOf(new_strategy) > 0
+
+    if which_strategy not in [1, 2, 3]:
+        assert convex_token.balanceOf(strategy) == 0
+        assert convex_token.balanceOf(new_strategy) > 0
+
+    if which_strategy == 4:
+        assert fxs.balanceOf(strategy) == 0
+        assert fxs.balanceOf(new_strategy) > 0
+
+    if which_strategy == 2:
+        assert yprisma.balanceOf(strategy) == 0
+        assert yprisma.balanceOf(new_strategy) > 0
+
+    if which_strategy == 3:
+        assert fxn.balanceOf(strategy) == 0
+        assert fxn.balanceOf(new_strategy) > 0
+
+    # assert that our old strategy is empty
+    updated_total_old = strategy.estimatedTotalAssets()
+    assert updated_total_old == 0
+
+    # harvest to get funds back in new strategy
+    (profit, loss, extra) = harvest_strategy(
+        use_yswaps,
+        new_strategy,
+        token,
+        gov,
+        profit_whale,
+        profit_amount,
+        target,
+    )
+    new_strat_balance = new_strategy.estimatedTotalAssets()
+
+    # confirm that we have the same amount of assets in our new strategy as old
+    if no_profit:
+        assert pytest.approx(new_strat_balance, rel=RELATIVE_APPROX) == total_old
+    else:
+        assert new_strat_balance > total_old
+
+    # record our new assets
+    vault_new_assets = vault.totalAssets()
+
+    # simulate earnings
+    increase_time(chain, sleep_time)
+
+    # Test out our migrated strategy, confirm we're making a profit
+    (profit, loss, extra) = harvest_strategy(
+        use_yswaps,
+        new_strategy,
+        token,
+        gov,
+        profit_whale,
+        profit_amount,
+        target,
+    )
+
+    vault_newer_assets = vault.totalAssets()
+    # confirm we made money, or at least that we have about the same
+    if no_profit:
+        assert (
+            pytest.approx(vault_newer_assets, rel=RELATIVE_APPROX) == vault_new_assets
+        )
+    else:
+        assert vault_newer_assets > vault_new_assets
+
+
+# make sure we can still migrate when we don't have funds
+def test_empty_migration(
+    gov,
+    token,
+    vault,
+    whale,
+    strategy,
+    amount,
+    sleep_time,
+    contract_name,
+    profit_whale,
+    profit_amount,
+    target,
+    trade_factory,
+    use_yswaps,
+    is_slippery,
+    RELATIVE_APPROX,
+    which_strategy,
+    pid,
+    new_proxy,
+    booster,
+    convex_token,
+    gauge,
+    crv,
+    frax_booster,
+    frax_pid,
+    staking_address,
+    prisma_vault,
+    prisma_convex_factory,
+    yprisma,
+    fxn_pid,
+):
+
+    ## deposit to the vault after approving
+    token.approve(vault, 2**256 - 1, sender=whale)
+    vault.deposit(amount, sender=whale)
+    (profit, loss, extra) = harvest_strategy(
+        use_yswaps,
+        strategy,
+        token,
+        gov,
+        profit_whale,
+        profit_amount,
+        target,
+    )
+
+    # record our current strategy's assets
+    total_old = strategy.estimatedTotalAssets()
+
+    # sleep to collect earnings
+    increase_time(chain, sleep_time)
+
+    ######### THIS WILL NEED TO BE UPDATED BASED ON STRATEGY CONSTRUCTOR #########
+    if which_strategy == 0:  # convex
+        new_strategy = gov.deploy(
+            contract_name,
+            vault,
+            trade_factory,
+            pid,
+            10_000 * 10**6,
+            25_000 * 10**6,
+            booster,
+            convex_token,
+        )
+    elif which_strategy == 1:  # curve
+        new_strategy = gov.deploy(
+            contract_name,
+            vault,
+            trade_factory,
+            new_proxy,
+            gauge,
+        )
+    elif which_strategy == 2:  # prisma convex
+        new_strategy = gov.deploy(
+            contract_name,
+            vault,
+            trade_factory,
+            prisma_vault,
+            prisma_convex_factory.getDeterministicAddress(
+                pid
+            ),  # This looks up the prisma receiver for the pool
+        )
+    elif which_strategy == 3:  # fxn convex
+        new_strategy = gov.deploy(
+            contract_name,
+            vault,
+            trade_factory,
+            fxn_pid,
+        )
+    elif which_strategy == 4:  # frax
+        new_strategy = gov.deploy(
+            contract_name,
+            vault,
+            trade_factory,
+            frax_pid,
+            staking_address,
+            10_000 * 10**6,
+            25_000 * 10**6,
+            frax_booster,
+        )
+
+    if which_strategy == 4:
+        # wait another week so our frax LPs are unlocked, need to do this when reducing debt or withdrawing
+        increase_time(chain, 86400 * 7)
+
+    # set our debtRatio to zero so our harvest sends all funds back to vault
+    vault.updateStrategyDebtRatio(strategy, 0, sender=gov)
+    (profit, loss, extra) = harvest_strategy(
+        use_yswaps,
+        strategy,
+        token,
+        gov,
+        profit_whale,
+        profit_amount,
+        target,
+    )
+
+    # yswaps needs another harvest to get the final bit of profit to the vault
+    if use_yswaps:
+        (profit, loss, extra) = harvest_strategy(
+            use_yswaps,
+            strategy,
+            token,
+            gov,
+            profit_whale,
+            profit_amount,
+            target,
+        )
+
+    # shouldn't have any assets, unless we have slippage, then this might leave dust
+    # for complete emptying in this situtation, use emergencyExit
+    if is_slippery:
+        assert pytest.approx(strategy.estimatedTotalAssets(), rel=RELATIVE_APPROX) == 0
+        strategy.setEmergencyExit(sender=gov)
+
+        # turn off health check since taking profit on no debt
+        strategy.setDoHealthCheck(False, sender=gov)
+        (profit, loss, extra) = harvest_strategy(
+            use_yswaps,
+            strategy,
+            token,
+            gov,
+            profit_whale,
+            profit_amount,
+            target,
+        )
+
+    assert strategy.estimatedTotalAssets() == 0
+
+    # make sure we transferred strat params over
+    total_debt = vault.strategies(strategy)["totalDebt"]
+    debt_ratio = vault.strategies(strategy)["debtRatio"]
+
+    # migrate our old strategy
+    vault.migrateStrategy(strategy, new_strategy, sender=gov)
+
+    # new strategy should also be empty
+    assert new_strategy.estimatedTotalAssets() == 0
+
+    # make sure we took our gains and losses with us
+    assert total_debt == vault.strategies(new_strategy)["totalDebt"]
+    assert debt_ratio == vault.strategies(new_strategy)["debtRatio"] == 0
