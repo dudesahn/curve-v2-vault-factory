@@ -266,7 +266,7 @@ contract StrategyPrismaConvexFactoryClonable is BaseStrategy {
             );
             // reset local vars to zero and do a single storage write to, you guessed it, save gas
             _claimParams.boostDelegate = address(0);
-            claimParams.maxFee = 0;
+            _claimParams.maxFee = 0;
             claimParams = _claimParams;
         } else if (_claimParams.shouldClaimRewards) {
             _claimRewards(_claimParams.forceClaimOnce, YEARN_LOCKER, 10_000);
