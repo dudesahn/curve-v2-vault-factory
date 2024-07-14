@@ -30,6 +30,10 @@ contract StrategyPrismaConvexFactoryClonable is BaseStrategy {
     IERC20 public constant yPrisma =
         IERC20(0xe3668873D944E4A949DA05fc8bDE419eFF543882);
 
+    /// @notice Where we claim emissions as yPRISMA
+    IPrismaVault public constant prismaVault =
+        IPrismaVault(0x06bDF212C290473dCACea9793890C5024c7Eb02c);
+
     /* ========== STATE VARIABLES ========== */
 
     /// @notice The percentage of CRV from each harvest that we send to our voter (out of 10,000).
@@ -49,9 +53,6 @@ contract StrategyPrismaConvexFactoryClonable is BaseStrategy {
 
     /// @notice The address of our yPRISMA POL contract. This is where we send any keepYPrisma.
     address public yprismaVoter;
-
-    /// @notice Where we claim emissions as yPRISMA
-    IPrismaVault public prismaVault;
 
     /// @notice The contract we deposit our LPs to that is approved for PRISMA emissions.
     IPrismaReceiver public prismaReceiver;
@@ -95,10 +96,9 @@ contract StrategyPrismaConvexFactoryClonable is BaseStrategy {
     constructor(
         address _vault,
         address _tradeFactory,
-        address _prismaVault,
         address _prismaReceiver
     ) BaseStrategy(_vault) {
-        _initializeStrat(_tradeFactory, _prismaVault, _prismaReceiver);
+        _initializeStrat(_tradeFactory, _prismaReceiver);
     }
 
     /* ========== CLONING ========== */
@@ -113,7 +113,6 @@ contract StrategyPrismaConvexFactoryClonable is BaseStrategy {
      * @param _rewards If we have any strategist rewards, send them here.
      * @param _keeper Address to grant the keeper role.
      * @param _tradeFactory Our trade factory address.
-     * @param _prismaVault Address of the Prisma vault.
      * @param _prismaReceiver Address of the Prisma receiver to farm.
      */
     function cloneStrategyPrismaConvex(
@@ -122,7 +121,6 @@ contract StrategyPrismaConvexFactoryClonable is BaseStrategy {
         address _rewards,
         address _keeper,
         address _tradeFactory,
-        address _prismaVault,
         address _prismaReceiver
     ) external returns (address newStrategy) {
         // dont clone a clone
@@ -153,7 +151,6 @@ contract StrategyPrismaConvexFactoryClonable is BaseStrategy {
             _rewards,
             _keeper,
             _tradeFactory,
-            _prismaVault,
             _prismaReceiver
         );
 
@@ -168,7 +165,6 @@ contract StrategyPrismaConvexFactoryClonable is BaseStrategy {
      * @param _rewards If we have any strategist rewards, send them here.
      * @param _keeper Address to grant the keeper role.
      * @param _tradeFactory Our trade factory address.
-     * @param _prismaVault Address of the Prisma vault to claim from.
      * @param _prismaReceiver Address of the Prisma receiver to farm.
      */
     function initialize(
@@ -177,25 +173,21 @@ contract StrategyPrismaConvexFactoryClonable is BaseStrategy {
         address _rewards,
         address _keeper,
         address _tradeFactory,
-        address _prismaVault,
         address _prismaReceiver
     ) public {
         _initialize(_vault, _strategist, _rewards, _keeper);
-        _initializeStrat(_tradeFactory, _prismaVault, _prismaReceiver);
+        _initializeStrat(_tradeFactory, _prismaReceiver);
     }
 
     // this is called by our original strategy, as well as any clones via the above function
     function _initializeStrat(
         address _tradeFactory,
-        address _prismaVault,
         address _prismaReceiver
     ) internal {
         // make sure that we havent initialized this before
-        require(_prismaVault != address(0), "Non-zero required");
-        require(address(prismaVault) == address(0), "Already initialized");
+        require(address(prismaReceiver) == address(0), "Already initialized");
 
         prismaReceiver = IPrismaReceiver(_prismaReceiver);
-        prismaVault = IPrismaVault(_prismaVault);
         tradeFactory = _tradeFactory;
 
         // set these values high by default so they are essentially turned off

@@ -60,31 +60,38 @@ def tenderly_fork(web3, chain):
 def which_strategy():
     # vanilla convex: 0
     # curve: 1
+    # Only test 2-4 if a pool actually has the relevant pid/receiver
     # prisma convex: 2
     # fxn convex: 3
-    # Only test 4 (Frax) for pools that actually have frax.
-    which_strategy = 3
+    # frax convex: 4
+    which_strategy = 2
     yield which_strategy
+
+
+# ***** note that testing both the factory and the strategy folders together seems buggy in ape; the strategy section doesn't recognize
+#  the balance of ether we gave to our whale account...and something similar seemed to happen in the curve_global testing as well. super weird.
 
 
 @pytest.fixture(scope="session")
 def token_string():
-    id_number = 10
+    id_number = 0
     token_string = "ERROR"
     if id_number == 0:
-        token_string = "yPRISMA"  # working 7/9/24 w/ 2 (prisma, ape)
+        token_string = "yPRISMA"  # working 7/14/24 w/ 2 (prisma, ape)
     elif id_number == 1:
         token_string = "cvxPRISMA"
     elif id_number == 2:
-        token_string = "cvxCRV New"  # working 7/9/24 w/ 0-1 (convex/curve, ape) (still need to fix em exit convex 1)
+        token_string = "cvxCRV New"  # working 7/14/24 w/ 0-1 (convex/curve, ape) (still need to fix em exit convex 1)
     elif id_number == 3:
         token_string = "stETH"
     elif id_number == 4:
-        token_string = "FRAX-USDC"
+        token_string = "FRAX-USDC"  # working 7/14/24 w/ 4 (frax, ape)
     elif id_number == 5:
         token_string = "frxETH"
-    elif id_number == 6:
-        token_string = "eCFX"
+    elif (
+        id_number == 6
+    ):  # note that lock_time_min on this is 1 second, which breaks some frax test assumptions that it's 1 day (all previous ones were 1 day)
+        token_string = "DOLA-FRAXPYUSD"  # good for testing out factory (working 7/14/24), it has a frax pool and we don't have a vault for it
     elif id_number == 7:
         token_string = "eUSD-FRAXBP"
     elif id_number == 8:
@@ -95,6 +102,8 @@ def token_string():
         token_string = "GHO-fxUSD"  # working 7/9/24 w/ 3 (fxn, ape)
     elif id_number == 11:
         token_string = "CurveLend-WETH"  # working 7/9/24 w/ 0-1 (convex/curve, ape) (still need to fix em exit convex 1)
+    elif id_number == 12:
+        token_string = "eUSD-fxUSD"  # working 7/14/24 w/ 3 (fxn, ape)
     yield token_string
 
 
@@ -112,6 +121,11 @@ def token(token_address_via_convex):
         yield Contract(token_address, abi="abis/IERC20.json")
 
 
+# convex implemented a change where you might need to wait until next epoch to earmark to prevent over-harvesting
+# so don't earmark unless we really need to
+do_earmark = False
+
+
 @pytest.fixture(scope="session")
 def whale_accounts():
     whale_accounts = {
@@ -121,12 +135,13 @@ def whale_accounts():
         "stETH": "0x65eaB5eC71ceC12f38829Fbb14C98ce4baD28C46",  # 1700 tokens
         "FRAX-USDC": "0xE57180685E3348589E9521aa53Af0BCD497E884d",  # DOLA Pool, 23.6M tokens
         "frxETH": "0x2932a86df44Fe8D2A706d8e9c5d51c24883423F5",  # 78k tokens
-        "eCFX": "0xeCb456EA5365865EbAb8a2661B0c503410e9B347",  # only use for factory deployment testing
+        "DOLA-FRAXPYUSD": "0x4B092818708A721cB187dFACF41f440ADb79044D",  # gauge, mainly use for factory deployment testing
         "eUSD-FRAXBP": "0x8605dc0C339a2e7e85EEA043bD29d42DA2c6D784",  # 13M
         "crvUSD-FRAX": "0x96424E6b5eaafe0c3B36CA82068d574D44BE4e3c",  # 88.5k
         "frxETH-ng": "0x4E21418095d32d15c6e2B96A9910772613A50d50",  # 40k (gauge, not perfect for strat testing but good for factory testing)
         "GHO-fxUSD": "0xec303960CF0456aC304Af45C0aDDe34921a10Fdf",  # 5M, gauge
         "CurveLend-WETH": "0xF3F6D6d412a77b680ec3a5E35EbB11BbEC319739",  # 7.5B, gauge (1000x)
+        "eUSD-fxUSD": "0x1BD797787Eb1bcf91445fA14671F19f5A722E1f5",  # 760k, gauge
         "NEW": "",  #
     }
     yield whale_accounts
@@ -158,12 +173,13 @@ def whale_amounts():
         "stETH": 300,
         "FRAX-USDC": 50_000,
         "frxETH": 5_000,
-        "eCFX": 5,
+        "DOLA-FRAXPYUSD": 1_000,
         "eUSD-FRAXBP": 5_000,
         "crvUSD-FRAX": 10_000,
         "frxETH-ng": 100,
         "GHO-fxUSD": 1_000,
         "CurveLend-WETH": 100_000_000,  # $100k of crvUSD
+        "eUSD-fxUSD": 1_000,  #
         "NEW": 0,
     }
     yield whale_amounts
@@ -185,12 +201,13 @@ def profit_whale_accounts():
         "stETH": "0x82a7E64cdCaEdc0220D0a4eB49fDc2Fe8230087A",  # 500 tokens
         "FRAX-USDC": "0x8fdb0bB9365a46B145Db80D0B1C5C5e979C84190",  # BUSD Pool, 17M tokens
         "frxETH": "0x38a93e70b0D8343657f802C1c3Fdb06aC8F8fe99",  # 28 tokens
-        "eCFX": "0xeCb456EA5365865EbAb8a2661B0c503410e9B347",  # only use for factory deployment testing
+        "DOLA-FRAXPYUSD": "0x5180db0237291A6449DdA9ed33aD90a38787621c",  # mainly use for factory deployment testing
         "eUSD-FRAXBP": "0xf83deAdE1b0D2AfF07700C548a54700a082388bE",  # 188
         "crvUSD-FRAX": "0x97283C716f72b6F716D6a1bf6Bd7C3FcD840027A",  # 24.5k
         "frxETH-ng": "0x4E21418095d32d15c6e2B96A9910772613A50d50",
-        "GHO-fxUSD": "0xfefB84273A4DEdd40D242f4C007190DE21C9E39e",
+        "GHO-fxUSD": "0x34A7a276eD77c6FE866c75Bbc8d79127c4E14a09",  # make sure not to use the liquidity manager address
         "CurveLend-WETH": "0x4Ec3fa22540f841657197440FeE70B5967465AaA",  # 5M, but actually $5k since each is 1000x
+        "eUSD-fxUSD": "0xDC61247FA0cE4eB7f5c34923Fd63Ed5C7eC6d234",  # tiny amount so we don't use gauge or liq manager
         "NEW": "",  #
     }
     yield profit_whale_accounts
@@ -219,12 +236,13 @@ def profit_amounts():
         "stETH": 2,
         "FRAX-USDC": 1_000,
         "frxETH": 4,
-        "eCFX": 1,
+        "DOLA-FRAXPYUSD": 2.5,
         "eUSD-FRAXBP": 25,
         "crvUSD-FRAX": 50,
         "frxETH-ng": 1,
-        "GHO-fxUSD": 50,
+        "GHO-fxUSD": 3,
         "CurveLend-WETH": 500_000,  # $500 of crvUSD
+        "eUSD-fxUSD": 0.0002,  # 0.00144 in this address lol
         "NEW": 0,
     }
     yield profit_amounts
@@ -232,7 +250,7 @@ def profit_amounts():
 
 @pytest.fixture(scope="session")
 def profit_amount(token, profit_amounts, token_string):
-    profit_amount = profit_amounts[token_string] * 10 ** token.decimals()
+    profit_amount = int(profit_amounts[token_string] * 10 ** token.decimals())
     yield profit_amount
 
 
@@ -334,11 +352,24 @@ def tests_using_tenderly():
     yield yes_or_no
 
 
-# by default, pytest uses decimals, but in solidity we use uints, so 10 actually equals 10 wei (1e-17 for most assets, or 1e-6 for USDC/USDT)
+@pytest.fixture(scope="session")
+def rando(accounts):
+    yield accounts[0]
+
+
+# by default, pytest uses decimals, but in solidity we use uints...so 10 actually equals 10 wei: 1e-17 for most assets,
+#  or 1e-6 for USDC/USDT). note that default pytest behavior is relative approx of 1 ppm (10e-6) and absolute 1e-12
+@pytest.fixture(scope="session")
+def ABSOLUTE_APPROX(token):
+    approx = 10
+    print("Absolute approx:", approx, "wei")
+    yield approx
+
+
 @pytest.fixture(scope="session")
 def RELATIVE_APPROX(token):
-    approx = 10
-    print("Approx:", approx, "wei")
+    approx = 1 * 10**-6
+    print("Relative approx:", approx)
     yield approx
 
 
@@ -478,7 +509,6 @@ def strategy(
     staking_address,
     prisma_convex_factory,
     yprisma,
-    prisma_vault,
     fxn_pid,
 ):
     if which_strategy == 0:  # convex
@@ -507,7 +537,6 @@ def strategy(
             contract_name,
             vault,
             trade_factory,
-            prisma_vault,
             prisma_convex_factory.getDeterministicAddress(
                 pid
             ),  # This looks up the prisma receiver for the pool
@@ -542,10 +571,10 @@ def strategy(
     management.balance += 10 * 10**18
     voter.balance += 10 * 10**18
 
+    if do_earmark:
+        booster.earmarkRewards(pid, sender=gov)
+
     if which_strategy == 0:  # convex
-        # convex implemented a change where you might need to wait until next epoch to earmark to prevent over-harvesting
-        # increase_time(chain, 86400 * 7)
-        # booster.earmarkRewards(pid, sender=gov)
         increase_time(chain, 1)
 
         vault.addStrategy(strategy, 10_000, 0, 2**256 - 1, 0, sender=gov)
@@ -608,7 +637,7 @@ def strategy(
         )
 
         # for testing, let's deposit anything above 10 ** 18
-        strategy.setDepositParams(10**18, 5_000_000e18, False, sender=gov)
+        strategy.setDepositParams(10**18, 5_000_000 * 10**18, False, sender=gov)
 
     # turn our oracle into testing mode by setting the provider to 0x00, then forcing true
     strategy.setBaseFeeOracle(base_fee_oracle, sender=management)
@@ -633,12 +662,13 @@ def pid_list():
         "stETH": 25,
         "FRAX-USDC": 100,
         "frxETH": 128,  # do for frax
-        "eCFX": 160,
+        "DOLA-FRAXPYUSD": 317,
         "eUSD-FRAXBP": 156,
         "crvUSD-FRAX": 187,
         "frxETH-ng": 219,
         "GHO-fxUSD": 316,  # we don't really need this for FXN strategies, but set to use for token lookup
         "CurveLend-WETH": 365,
+        "eUSD-fxUSD": 339,
         "NEW": 0,
     }
     yield pid_list
@@ -671,12 +701,13 @@ def frax_pid_list():
         "stETH": 1_000,
         "FRAX-USDC": 9,
         "frxETH": 36,
-        "eCFX": 1_000,
+        "DOLA-FRAXPYUSD": 73,
         "eUSD-FRAXBP": 44,
         "crvUSD-FRAX": 49,
         "frxETH-ng": 63,
         "GHO-fxUSD": 1_000,
         "CurveLend-WETH": 1_000,
+        "eUSD-fxUSD": 1_000,
         "NEW": 0,
     }
     yield frax_pid_list
@@ -698,12 +729,13 @@ def fxn_pid_list():
         "stETH": 1_000,
         "FRAX-USDC": 1_000,
         "frxETH": 1_000,
-        "eCFX": 1_000,
+        "DOLA-FRAXPYUSD": 1_000,
         "eUSD-FRAXBP": 1_000,
         "crvUSD-FRAX": 1_000,
         "frxETH-ng": 1_000,
         "GHO-fxUSD": 14,
         "CurveLend-WETH": 1_000,
+        "eUSD-fxUSD": 29,
         "NEW": 0,
     }
     yield fxn_pid_list
@@ -725,12 +757,13 @@ def staking_address_list():
         "stETH": "NULL",
         "FRAX-USDC": "0x963f487796d54d2f27bA6F3Fbe91154cA103b199",
         "frxETH": "0xa537d64881b84faffb9Ae43c951EEbF368b71cdA",
-        "eCFX": "NULL",
+        "DOLA-FRAXPYUSD": "0x972d92f4563Ac9581c730A13A47Ae9d6dCdf18b7",
         "eUSD-FRAXBP": "0x4c9AD8c53d0a001E7fF08a3E5E26dE6795bEA5ac",
         "crvUSD-FRAX": "0x67CC47cF82785728DD5E3AE9900873a074328658",
         "frxETH-ng": "0xB4fdD7444E1d86b2035c97124C46b1528802DA35",
         "GHO-fxUSD": "NULL",
         "CurveLend-WETH": "NULL",
+        "eUSD-fxUSD": "NULL",
         "NEW": "NULL",
     }
     yield staking_address_list
@@ -843,8 +876,8 @@ def booster():  # this is the deposit contract
 
 
 @pytest.fixture(scope="session")
-def frax_booster():
-    yield Contract("0x2B8b301B90Eb8801f1eEFe73285Eec117D2fFC95")
+def frax_booster(curve_global):
+    yield Contract(curve_global.fraxBooster())
 
 
 @pytest.fixture(scope="session")
@@ -959,7 +992,6 @@ def gauge(pid, booster):
 
 @pytest.fixture(scope="function")
 def convex_template(
-    StrategyConvexFactoryClonable,
     trade_factory,
     template_vault,
     gov,
@@ -969,7 +1001,7 @@ def convex_template(
 ):
     # deploy our convex template
     convex_template = gov.deploy(
-        StrategyConvexFactoryClonable,
+        project.StrategyConvexFactoryClonable,
         template_vault,
         trade_factory,
         template_pid,
@@ -985,7 +1017,6 @@ def convex_template(
 
 @pytest.fixture(scope="function")
 def curve_template(
-    StrategyCurveBoostedFactoryClonable,
     trade_factory,
     template_vault,
     strategist,
@@ -995,7 +1026,7 @@ def curve_template(
 ):
     # deploy our curve template
     curve_template = gov.deploy(
-        StrategyCurveBoostedFactoryClonable,
+        project.StrategyCurveBoostedFactoryClonable,
         template_vault,
         trade_factory,
         new_proxy,
@@ -1008,7 +1039,6 @@ def curve_template(
 
 @pytest.fixture(scope="function")
 def frax_template(
-    StrategyConvexFraxFactoryClonable,
     trade_factory,
     template_vault,
     strategist,
@@ -1018,7 +1048,7 @@ def frax_template(
     gov,
 ):
     frax_template = gov.deploy(
-        StrategyConvexFraxFactoryClonable,
+        project.StrategyConvexFraxFactoryClonable,
         template_vault,
         trade_factory,
         template_frax_pid,
@@ -1033,11 +1063,16 @@ def frax_template(
 
 
 @pytest.fixture(scope="session")
-def curve_global(CurveGlobal):
+def curve_global():
     # deploy our factory
-    curve_global = CurveGlobal.at("0x21b1FC8A52f179757bf555346130bF27c0C2A17A")
+    curve_global = project.CurveGlobal.at("0x21b1FC8A52f179757bf555346130bF27c0C2A17A")
     print("Curve factory already deployed:", curve_global)
     yield curve_global
+
+
+@pytest.fixture(scope="session")
+def factory_management(curve_global):
+    yield accounts[curve_global.management()]
 
 
 @pytest.fixture(scope="session")

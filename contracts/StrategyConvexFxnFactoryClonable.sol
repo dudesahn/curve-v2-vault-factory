@@ -34,15 +34,23 @@ contract StrategyConvexFxnFactoryClonable is BaseStrategy {
     IERC20 public constant fxn =
         IERC20(0x365AccFCa291e7D3914637ABf1F7635dB165Bb09);
 
+    /// @notice The address of our base token (CRV for Curve, BAL for Balancer, etc.).
+    IERC20 public constant crv =
+        IERC20(0xD533a949740bb3306d119CC777fa900bA034cd52);
+
+    /// @notice The address of our Convex token (CVX for Curve, AURA for Balancer, etc.).
+    IERC20 public constant convexToken =
+        IERC20(0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B);
+
     // ySwaps stuff
     /// @notice The address of our ySwaps trade factory.
     address public tradeFactory;
 
-    /// @notice Array of any extra rewards tokens this pool may have. Add CRV and CVX if those rewards start flowing.
-    address[] public rewardsTokens;
-
     /// @notice Will only be true on the original deployed contract and not on clones; we do not want to clone a clone.
     bool public isOriginal = true;
+
+    /// @notice Array of any extra rewards tokens this pool may have. Add CRV and CVX if those rewards start flowing.
+    address[] public rewardsTokens;
 
     /// @notice Used to track the deployed version of this contract. Maps to releases in the CurveVaultFactory repo.
     string public constant strategyVersion = "4.1.0";
@@ -146,7 +154,7 @@ contract StrategyConvexFxnFactoryClonable is BaseStrategy {
         (, address _gauge, address lptoken, , ) = fxnPoolRegistry.poolInfo(
             _fxnPid
         );
-        if (address(lptoken) != address(want)) {
+        if (lptoken != address(want)) {
             revert("wrong pid");
         }
 
@@ -310,7 +318,7 @@ contract StrategyConvexFxnFactoryClonable is BaseStrategy {
         return balanceOfWant();
     }
 
-    // migrate our want token to a new strategy if needed, claim rewards tokens as well unless its an emergency
+    // migrate our want token to a new strategy if needed. make sure to claim rewards atomically when migrating.
     function prepareMigration(address _newStrategy) internal override {
         uint256 _stakedBal = stakedBalance();
 
@@ -322,6 +330,17 @@ contract StrategyConvexFxnFactoryClonable is BaseStrategy {
 
         if (fxnBal > 0) {
             fxn.safeTransfer(_newStrategy, fxnBal);
+        }
+
+        // some FXN strategies will have cvx or crv to migrate as well
+        uint256 crvBal = crv.balanceOf(address(this));
+        uint256 cvxBal = convexToken.balanceOf(address(this));
+
+        if (crvBal > 0) {
+            crv.safeTransfer(_newStrategy, crvBal);
+        }
+        if (cvxBal > 0) {
+            convexToken.safeTransfer(_newStrategy, cvxBal);
         }
     }
 
@@ -385,6 +404,11 @@ contract StrategyConvexFxnFactoryClonable is BaseStrategy {
             );
             tf.enable(_rewardsToken, _want);
         }
+        crv.forceApprove(_tradeFactory, type(uint256).max);
+        tf.enable(address(crv), _want);
+
+        convexToken.forceApprove(_tradeFactory, type(uint256).max);
+        tf.enable(address(convexToken), _want);
 
         fxn.forceApprove(_tradeFactory, type(uint256).max);
         tf.enable(address(fxn), _want);
@@ -410,6 +434,20 @@ contract StrategyConvexFxnFactoryClonable is BaseStrategy {
         ITradeFactory tf = ITradeFactory(_tradeFactory);
 
         address _want = address(want);
+        crv.forceApprove(_tradeFactory, 0);
+        if (_disableTf) {
+            tf.disable(address(crv), _want);
+        }
+
+        fxn.forceApprove(_tradeFactory, 0);
+        if (_disableTf) {
+            tf.disable(address(fxn), _want);
+        }
+
+        convexToken.forceApprove(_tradeFactory, 0);
+        if (_disableTf) {
+            tf.disable(address(convexToken), _want);
+        }
 
         // disable for any other rewards tokens too
         for (uint256 i; i < rewardsTokens.length; ++i) {
@@ -418,11 +456,6 @@ contract StrategyConvexFxnFactoryClonable is BaseStrategy {
             if (_disableTf) {
                 tf.disable(_rewardsToken, _want);
             }
-        }
-
-        fxn.forceApprove(_tradeFactory, 0);
-        if (_disableTf) {
-            tf.disable(address(fxn), _want);
         }
 
         tradeFactory = address(0);

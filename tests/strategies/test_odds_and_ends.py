@@ -19,7 +19,7 @@ def test_liquidatePosition(
     target,
     use_yswaps,
     is_slippery,
-    RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     vault_address,
     which_strategy,
     pid,
@@ -112,7 +112,7 @@ def test_liquidatePosition(
     # if slippery, then assets may differ slightly from debt
     if is_slippery:
         assert (
-            pytest.approx(initial_debt, rel=RELATIVE_APPROX) == initial_strategy_assets
+            pytest.approx(initial_debt, abs=ABSOLUTE_APPROX) == initial_strategy_assets
         )
     else:
         assert initial_debt == initial_strategy_assets
@@ -165,24 +165,24 @@ def test_liquidatePosition(
             # remaining debt, plus whale's deposits, should be approximately our old assets
             assert (
                 pytest.approx(
-                    strategy_params["totalDebt"] + amount, rel=RELATIVE_APPROX
+                    strategy_params["totalDebt"] + amount, abs=ABSOLUTE_APPROX
                 )
                 == old_assets
             )
             # DR scales proportionally with the holdings of our whale (ie, x% of vault that was lost)
             assert (
-                pytest.approx(strategy_params["debtRatio"], rel=RELATIVE_APPROX)
+                pytest.approx(strategy_params["debtRatio"], abs=ABSOLUTE_APPROX)
                 == whale_holdings
             )
             # vault assets will still be the same minus the "withdrawn" assets
             assert (
-                pytest.approx(vault.totalAssets() + amount, rel=RELATIVE_APPROX)
+                pytest.approx(vault.totalAssets() + amount, abs=ABSOLUTE_APPROX)
                 == old_assets
             )
             # debt outstanding is the portion of debt that needs to be paid back (DR is still greater than zero)
             assert pytest.approx(
                 vault.totalAssets() * (10_000 - strategy_params["debtRatio"]) / 10_000,
-                rel=RELATIVE_APPROX,
+                abs=ABSOLUTE_APPROX,
             ) == vault.debtOutstanding(strategy)
         else:
             assert strategy_params["totalDebt"] + amount == old_assets
@@ -197,7 +197,7 @@ def test_liquidatePosition(
 
 
 # there also may be situations where the destination protocol is exploited or funds are locked but you still hold the same number of wrapper tokens
-# though liquity doesn't have this as an option, it's important to test if it is to make sure debt is maintained properly in the case future assets free up
+# it's important to test if it is to make sure debt is maintained properly in the case future assets free up
 def test_locked_funds(
     gov,
     token,
@@ -393,7 +393,7 @@ def test_empty_strat(
     use_yswaps,
     old_vault,
     is_slippery,
-    RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     vault_address,
     which_strategy,
     pid,
@@ -472,7 +472,7 @@ def test_empty_strat(
 
         # we have to manually claim these rewards
         # also, FXS profit accrues every block, so we will still get some dust rewards after we exit as well if we were to call getReward() again
-        user_vault = interface.IFraxVault(strategy.userVault())
+        user_vault = Contract(strategy.userVault())
         user_vault.getReward(sender=gov)
 
         # try and make the staking pool send away assets to simulate losses
@@ -499,7 +499,7 @@ def test_empty_strat(
     # if slippery, then assets may differ slightly from debt
     if is_slippery:
         assert (
-            pytest.approx(initial_debt, rel=RELATIVE_APPROX) == initial_strategy_assets
+            pytest.approx(initial_debt, abs=ABSOLUTE_APPROX) == initial_strategy_assets
         )
     else:
         assert initial_debt == initial_strategy_assets

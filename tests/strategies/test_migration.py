@@ -33,8 +33,7 @@ def test_migration(
     fxs,
     prisma_convex_factory,
     yprisma,
-    prisma_vault,
-    RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     fxn_pid,
     fxn,
 ):
@@ -83,7 +82,6 @@ def test_migration(
             contract_name,
             vault,
             trade_factory,
-            prisma_vault,
             prisma_convex_factory.getDeterministicAddress(
                 pid
             ),  # This looks up the prisma receiver for the pool
@@ -190,7 +188,7 @@ def test_migration(
 
     # confirm that we have the same amount of assets in our new strategy as old
     if no_profit:
-        assert pytest.approx(new_strat_balance, rel=RELATIVE_APPROX) == total_old
+        assert pytest.approx(new_strat_balance, abs=ABSOLUTE_APPROX) == total_old
     else:
         assert new_strat_balance > total_old
 
@@ -215,7 +213,7 @@ def test_migration(
     # confirm we made money, or at least that we have about the same
     if no_profit:
         assert (
-            pytest.approx(vault_newer_assets, rel=RELATIVE_APPROX) == vault_new_assets
+            pytest.approx(vault_newer_assets, abs=ABSOLUTE_APPROX) == vault_new_assets
         )
     else:
         assert vault_newer_assets > vault_new_assets
@@ -237,7 +235,7 @@ def test_empty_migration(
     trade_factory,
     use_yswaps,
     is_slippery,
-    RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     which_strategy,
     pid,
     new_proxy,
@@ -248,7 +246,6 @@ def test_empty_migration(
     frax_booster,
     frax_pid,
     staking_address,
-    prisma_vault,
     prisma_convex_factory,
     yprisma,
     fxn_pid,
@@ -298,7 +295,6 @@ def test_empty_migration(
             contract_name,
             vault,
             trade_factory,
-            prisma_vault,
             prisma_convex_factory.getDeterministicAddress(
                 pid
             ),  # This looks up the prisma receiver for the pool
@@ -353,7 +349,7 @@ def test_empty_migration(
     # shouldn't have any assets, unless we have slippage, then this might leave dust
     # for complete emptying in this situtation, use emergencyExit
     if is_slippery:
-        assert pytest.approx(strategy.estimatedTotalAssets(), rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy.estimatedTotalAssets(), abs=ABSOLUTE_APPROX) == 0
         strategy.setEmergencyExit(sender=gov)
 
         # turn off health check since taking profit on no debt

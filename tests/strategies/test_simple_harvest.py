@@ -24,7 +24,7 @@ def test_simple_harvest(
     crv_whale,
     rewards_contract,
     tests_using_tenderly,
-    RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
 ):
     ## deposit to the vault after approving
     starting_whale = token.balanceOf(whale)
@@ -34,7 +34,7 @@ def test_simple_harvest(
 
     # for frax, we should have an adjustable minDeposit
     if which_strategy == 4:
-        strategy.setDepositParams(0, amount / 10, False, sender=gov)
+        strategy.setDepositParams(0, int(amount / 10), False, sender=gov)
 
     # harvest, store asset amount
     (profit, loss, extra) = harvest_strategy(
@@ -60,24 +60,24 @@ def test_simple_harvest(
         assert strategy.forceHarvestTriggerOnce() == False
 
         assert (
-            chain.time() - vault.strategies(strategy.address)["lastReport"]
+            chain.pending_timestamp - vault.strategies(strategy.address)["lastReport"]
             < strategy.maxReportDelay()
         )
         increase_time(chain, 2)
 
         assert (
-            chain.time() - vault.strategies(strategy.address)["lastReport"]
+            chain.pending_timestamp - vault.strategies(strategy.address)["lastReport"]
             > strategy.minReportDelay()
         )
 
         strategy.setMinReportDelay(2**256 - 1, sender=gov)
 
         assert (
-            chain.time() - vault.strategies(strategy.address)["lastReport"]
+            chain.pending_timestamp - vault.strategies(strategy.address)["lastReport"]
             < strategy.minReportDelay()
         )
 
-        tx = strategy.harvestTrigger.call(0, sender=gov)
+        tx = strategy.harvestTrigger(0)
         print("\nShould we harvest? Should be false.", tx)
         assert tx == False
 
@@ -85,7 +85,7 @@ def test_simple_harvest(
 
         strategy.setMinReportDelay(49, sender=gov)
 
-        tx = strategy.harvestTrigger.call(0, sender=gov)
+        tx = strategy.harvestTrigger(0)
         print("\nShould we harvest? Should be true.", tx)
         assert tx == True
 
@@ -101,7 +101,7 @@ def test_simple_harvest(
     if which_strategy == 4:
         pending = strategy.getEarnedTokens()
         print("Strategy", strategy.name(), "pid:", strategy.fraxPid())
-        print("Pending:", pending.dict())
+        print("Pending:", pending)
 
     # check our claimable from prisma receiver
     if which_strategy == 2:
@@ -152,7 +152,7 @@ def test_simple_harvest(
 
     # confirm we made money, or at least that we have about the same
     if no_profit:
-        assert pytest.approx(new_assets, rel=RELATIVE_APPROX) == old_assets
+        assert pytest.approx(new_assets, abs=ABSOLUTE_APPROX) == old_assets
     else:
         new_assets > old_assets
 
@@ -168,14 +168,14 @@ def test_simple_harvest(
     )
 
     if which_strategy == 4:
-        # wait another week so our frax LPs are unlocked, need to do this when reducing debt or withdrawing
-        increase_time(chain, 86400 * 7)
+        # wait a week total so our frax LPs are unlocked, need to do this when reducing debt or withdrawing
+        increase_time(chain, 86400 * 2)
 
     # withdraw and confirm we made money, or at least that we have about the same
     vault.withdraw(sender=whale)
     if no_profit:
         assert (
-            pytest.approx(token.balanceOf(whale), rel=RELATIVE_APPROX) == starting_whale
+            pytest.approx(token.balanceOf(whale), abs=ABSOLUTE_APPROX) == starting_whale
         )
     else:
         if profit_whale != whale:

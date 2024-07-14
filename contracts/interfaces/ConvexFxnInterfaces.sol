@@ -23,6 +23,8 @@ interface IConvexFxn {
 
     function deposit(uint256 _value) external;
 
+    function deposit(uint256 _value, bool _manage) external;
+
     function withdraw(uint256 _value) external;
 
     function rewards() external view returns (address);

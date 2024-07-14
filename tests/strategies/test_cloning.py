@@ -37,10 +37,9 @@ def test_cloning(
     frax_booster,
     has_rewards,
     rewards_token,
-    prisma_vault,
     prisma_receiver,
     yprisma,
-    RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     fxn_pid,
 ):
 
@@ -245,7 +244,6 @@ def test_cloning(
                     rewards,
                     keeper,
                     trade_factory,
-                    prisma_vault,
                     prisma_receiver,
                     sender=gov,
                 )
@@ -255,7 +253,6 @@ def test_cloning(
                 rewards,
                 keeper,
                 trade_factory,
-                prisma_vault,
                 prisma_receiver,
                 sender=gov,
             )
@@ -273,7 +270,6 @@ def test_cloning(
                     rewards,
                     keeper,
                     trade_factory,
-                    prisma_vault,
                     prisma_receiver,
                     sender=gov,
                 )
@@ -286,7 +282,6 @@ def test_cloning(
                     rewards,
                     keeper,
                     trade_factory,
-                    prisma_vault,
                     prisma_receiver,
                     sender=gov,
                 )
@@ -523,7 +518,7 @@ def test_cloning(
     vault.withdraw(sender=whale)
     if no_profit:
         assert (
-            pytest.approx(token.balanceOf(whale), rel=RELATIVE_APPROX) == starting_whale
+            pytest.approx(token.balanceOf(whale), abs=ABSOLUTE_APPROX) == starting_whale
         )
     else:
         assert token.balanceOf(whale) > starting_whale

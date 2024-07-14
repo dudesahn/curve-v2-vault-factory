@@ -18,7 +18,7 @@ def test_emergency_exit(
     profit_amount,
     target,
     use_yswaps,
-    RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     which_strategy,
     new_proxy,
     booster,
@@ -172,7 +172,7 @@ def test_emergency_exit(
     # share price should have gone up, without loss except for special cases
     if no_profit:
         assert (
-            pytest.approx(vault.pricePerShare(), rel=RELATIVE_APPROX)
+            pytest.approx(vault.pricePerShare(), abs=ABSOLUTE_APPROX)
             == starting_share_price
         )
     else:
@@ -183,7 +183,7 @@ def test_emergency_exit(
     vault.withdraw(sender=whale)
     if no_profit:
         assert (
-            pytest.approx(token.balanceOf(whale), rel=RELATIVE_APPROX) == starting_whale
+            pytest.approx(token.balanceOf(whale), abs=ABSOLUTE_APPROX) == starting_whale
         )
     else:
         assert token.balanceOf(whale) > starting_whale
@@ -204,7 +204,7 @@ def test_emergency_exit_with_profit(
     profit_amount,
     target,
     use_yswaps,
-    RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     which_strategy,
     new_proxy,
     booster,
@@ -375,7 +375,7 @@ def test_emergency_exit_with_profit(
     # share price should have gone up, without loss except for special cases
     if no_profit:
         assert (
-            pytest.approx(vault.pricePerShare(), rel=RELATIVE_APPROX)
+            pytest.approx(vault.pricePerShare(), abs=ABSOLUTE_APPROX)
             == starting_share_price
         )
     else:
@@ -386,7 +386,7 @@ def test_emergency_exit_with_profit(
     vault.withdraw(sender=whale)
     if no_profit:
         assert (
-            pytest.approx(token.balanceOf(whale), rel=RELATIVE_APPROX) == starting_whale
+            pytest.approx(token.balanceOf(whale), abs=ABSOLUTE_APPROX) == starting_whale
         )
     else:
         assert token.balanceOf(whale) > starting_whale
@@ -408,7 +408,7 @@ def test_emergency_exit_with_loss(
     target,
     use_yswaps,
     old_vault,
-    RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     which_strategy,
     pid,
     new_proxy,
@@ -508,7 +508,7 @@ def test_emergency_exit_with_loss(
     # if slippery, then assets may differ slightly from debt
     if is_slippery:
         assert (
-            pytest.approx(initial_debt, rel=RELATIVE_APPROX) == initial_strategy_assets
+            pytest.approx(initial_debt, abs=ABSOLUTE_APPROX) == initial_strategy_assets
         )
     else:
         assert initial_debt == initial_strategy_assets
@@ -575,7 +575,7 @@ def test_emergency_exit_with_loss(
     # if slippery, then assets may differ slightly from debt
     if is_slippery:
         assert (
-            pytest.approx(initial_debt, rel=RELATIVE_APPROX) == initial_strategy_assets
+            pytest.approx(initial_debt, abs=ABSOLUTE_APPROX) == initial_strategy_assets
         )
     else:
         assert initial_debt == initial_strategy_assets
@@ -672,7 +672,7 @@ def test_emergency_exit_with_no_loss(
     profit_amount,
     target,
     use_yswaps,
-    RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     which_strategy,
     cvx_deposit,
     pid,
@@ -853,7 +853,7 @@ def test_emergency_exit_with_no_loss(
     # if slippery, then assets may differ slightly from debt
     if is_slippery:
         assert (
-            pytest.approx(initial_debt, rel=RELATIVE_APPROX) == initial_strategy_assets
+            pytest.approx(initial_debt, abs=ABSOLUTE_APPROX) == initial_strategy_assets
         )
     else:
         assert initial_debt == initial_strategy_assets
@@ -917,7 +917,7 @@ def test_emergency_exit_with_no_loss(
 
     # confirm we didn't lose anything, or at worst just dust
     if is_slippery and no_profit:
-        assert pytest.approx(loss, rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(loss, abs=ABSOLUTE_APPROX) == 0
     else:
         assert loss == 0
 
@@ -931,7 +931,7 @@ def test_emergency_exit_with_no_loss(
     # share price should have gone up, without loss except for special cases
     if no_profit:
         assert (
-            pytest.approx(vault.pricePerShare(), rel=RELATIVE_APPROX)
+            pytest.approx(vault.pricePerShare(), abs=ABSOLUTE_APPROX)
             == starting_share_price
         )
     else:
@@ -946,7 +946,7 @@ def test_emergency_exit_with_no_loss(
     vault.withdraw(sender=whale)
     if no_profit:
         assert (
-            pytest.approx(token.balanceOf(whale), rel=RELATIVE_APPROX) == starting_whale
+            pytest.approx(token.balanceOf(whale), abs=ABSOLUTE_APPROX) == starting_whale
         )
     else:
         assert token.balanceOf(whale) > starting_whale
@@ -968,7 +968,7 @@ def test_emergency_shutdown_from_vault(
     profit_amount,
     target,
     use_yswaps,
-    RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     which_strategy,
     staking_address,
 ):
@@ -1093,13 +1093,13 @@ def test_emergency_shutdown_from_vault(
     # shouldn't have any assets, unless we have slippage, then this might leave dust
     # for complete emptying, use emergencyExit
     if is_slippery:
-        assert pytest.approx(strategy.estimatedTotalAssets(), rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy.estimatedTotalAssets(), abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy.estimatedTotalAssets() == 0
 
     # confirm we didn't lose anything, or at worst just dust
     if is_slippery and no_profit:
-        assert pytest.approx(loss, rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(loss, abs=ABSOLUTE_APPROX) == 0
     else:
         assert loss == 0
 
@@ -1113,7 +1113,7 @@ def test_emergency_shutdown_from_vault(
     # share price should have gone up, without loss except for special cases
     if no_profit:
         assert (
-            pytest.approx(vault.pricePerShare(), rel=RELATIVE_APPROX)
+            pytest.approx(vault.pricePerShare(), abs=ABSOLUTE_APPROX)
             == starting_share_price
         )
     else:
@@ -1128,7 +1128,7 @@ def test_emergency_shutdown_from_vault(
     vault.withdraw(sender=whale)
     if no_profit:
         assert (
-            pytest.approx(token.balanceOf(whale), rel=RELATIVE_APPROX) == starting_whale
+            pytest.approx(token.balanceOf(whale), abs=ABSOLUTE_APPROX) == starting_whale
         )
     else:
         assert token.balanceOf(whale) > starting_whale
@@ -1149,7 +1149,7 @@ def test_emergency_withdraw_method_0(
     target,
     use_yswaps,
     old_vault,
-    RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     which_strategy,
     pid,
     new_proxy,
@@ -1214,7 +1214,7 @@ def test_emergency_withdraw_method_0(
     # if slippery, then assets may differ slightly from debt
     if is_slippery:
         assert (
-            pytest.approx(initial_debt, rel=RELATIVE_APPROX) == initial_strategy_assets
+            pytest.approx(initial_debt, abs=ABSOLUTE_APPROX) == initial_strategy_assets
         )
     else:
         assert initial_debt == initial_strategy_assets
@@ -1264,7 +1264,7 @@ def test_emergency_withdraw_method_0(
     # if slippery, then assets may differ slightly from debt
     if is_slippery:
         assert (
-            pytest.approx(initial_debt, rel=RELATIVE_APPROX) == initial_strategy_assets
+            pytest.approx(initial_debt, abs=ABSOLUTE_APPROX) == initial_strategy_assets
         )
     else:
         assert initial_debt == initial_strategy_assets
@@ -1364,7 +1364,7 @@ def test_emergency_withdraw_method_1(
     target,
     use_yswaps,
     old_vault,
-    RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     which_strategy,
     pid,
     new_proxy,
@@ -1414,8 +1414,9 @@ def test_emergency_withdraw_method_1(
     # set this true if no profit on this test. it is normal for a strategy to not generate profit here.
     # realistically only wrapped tokens or every-block earners will see profits (convex, etc).
     # also checked in test_change_debt
+
     # no profit since we don't claim any rewards on withdrawal
-    # no_profit = True
+    no_profit = True
 
     # check our current status
     print("\nBefore dust transfer, after main fund transfer")
@@ -1430,7 +1431,7 @@ def test_emergency_withdraw_method_1(
     # if slippery, then assets may differ slightly from debt
     if is_slippery:
         assert (
-            pytest.approx(initial_debt, rel=RELATIVE_APPROX) == initial_strategy_assets
+            pytest.approx(initial_debt, abs=ABSOLUTE_APPROX) == initial_strategy_assets
         )
     else:
         assert initial_debt == initial_strategy_assets
@@ -1480,7 +1481,7 @@ def test_emergency_withdraw_method_1(
     # if slippery, then assets may differ slightly from debt
     if is_slippery:
         assert (
-            pytest.approx(initial_debt, rel=RELATIVE_APPROX) == initial_strategy_assets
+            pytest.approx(initial_debt, abs=ABSOLUTE_APPROX) == initial_strategy_assets
         )
     else:
         assert initial_debt == initial_strategy_assets

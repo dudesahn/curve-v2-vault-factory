@@ -1,15 +1,13 @@
-from ape import Contract, chain
-from utils import harvest_strategy, increase_time, check_status
+from ape import Contract, chain, project
+from utils import harvest_strategy, increase_time, check_status, ZERO_ADDRESS
 import pytest
+import ape
 
 
 # note that because ganache crashes with the try-catch when checking for frax pids, we need to do this test and the next with tenderly
 # for the vault deployment to not revert. additionally, best to do the first two individually.
 # also important to note that these tests don't care about which_strategy, but good to test out PIDs with and without frax strategies
 def test_vault_deployment(
-    StrategyConvexFactoryClonable,
-    StrategyCurveBoostedFactoryClonable,
-    StrategyConvexFraxFactoryClonable,
     strategist,
     curve_global,
     gov,
@@ -36,33 +34,8 @@ def test_vault_deployment(
     frax_template,
     curve_template,
     frax_booster,
+    rando,
 ):
-    ############# skip all of this since factory is already live
-
-    # once our factory is deployed, setup the factory from gov
-    # registry_owner = accounts.at(new_registry.owner(), force=True)
-    # new_registry.setApprovedVaultsOwner(curve_global, True, sender=registry_owner)
-    # new_registry.setVaultEndorsers(curve_global, True, sender=registry_owner)
-
-    # update the strategy on our voter
-    # voter.setStrategy(new_proxy.address, sender=gov)
-
-    # set our factory address on the strategy proxy
-    # new_proxy.setFactory(curve_global.address, sender=gov)
-
-    #############
-
-    # this will crash if we're not using tenderly
-    if not tests_using_tenderly:
-        return
-
-    # update our frax booster to v2
-    if curve_global.fraxBooster() != frax_booster.address:
-        curve_global.setFraxBooster(frax_booster, sender=gov)
-        print("Updated Frax Booster")
-
-    print("New proxy updated, factory added to proxy")
-
     # make sure our curve global can own vaults and endorse them
     assert new_registry.approvedVaultsOwner(curve_global)
     assert new_registry.vaultEndorsers(curve_global)
@@ -97,21 +70,22 @@ def test_vault_deployment(
 
     # make sure we can create this vault permissionlessly
     assert curve_global.latestStandardVaultFromGauge(legacy_gauge) != ZERO_ADDRESS
+
+    # EURS-USDC, has legacy gauge but doesn't have a factory vault tho
     assert not curve_global.canCreateVaultPermissionlessly(legacy_gauge)
-    assert curve_global.canCreateVaultPermissionlessly(
-        gauge
-    )  # obviously if we use a gauge with an existing legacy vault this will be false
+
+    # obviously if we use a gauge with an existing legacy vault this will be false
+    assert curve_global.canCreateVaultPermissionlessly(gauge)
 
     # before we deploy, check our gauge. we shouldn't have added this to our proxy yet
     answer = curve_global.doesStrategyProxyHaveGauge(gauge)
     print("Is this gauge already paired with a strategy on our proxy?", answer)
     assert not answer
 
-    # tenderly RPC can't do brownie.reverts
-    if not tests_using_tenderly:
-        with brownie.reverts():
-            curve_global.createNewVaultsAndStrategies(health_check, sender=whale)
-        print("Can't create a vault for something that's not actually a gauge")
+    # tenderly RPC can't do ape.reverts
+    with ape.reverts():
+        curve_global.createNewVaultsAndStrategies(health_check, sender=whale)
+    print("Can't create a vault for something that's not actually a gauge")
 
     # turn on keeps
     curve_global.setKeepCRV(69, curve_global.curveVoter(), sender=gov)
@@ -124,18 +98,18 @@ def test_vault_deployment(
     tx = curve_global.createNewVaultsAndStrategies(gauge, sender=whale)
     assert curve_global.latestStandardVaultFromGauge(gauge) != ZERO_ADDRESS
 
-    vault_address = tx.events["NewAutomatedVault"]["vault"]
+    for log in curve_global.NewAutomatedVault.from_receipt(tx):
+        vault_address = log.vault
+        cvx_strat = log.convexStrategy
+        curve_strat = log.curveStrategy
+        frax_strat = log.convexFraxStrategy
+
     vault = Contract(vault_address)
     print("Vault name:", vault.name())
-
     print("Vault endorsed:", vault_address)
-    info = tx.events["NewAutomatedVault"]
-
-    print("Here's our new vault created event:", info, "\n")
 
     # print our addresses
-    cvx_strat = tx.events["NewAutomatedVault"]["convexStrategy"]
-    convex_strategy = StrategyConvexFactoryClonable.at(cvx_strat)
+    convex_strategy = project.StrategyConvexFactoryClonable.at(cvx_strat)
 
     # check that everything is setup properly for our vault
     assert vault.governance() == curve_global.address
@@ -151,7 +125,7 @@ def test_vault_deployment(
     # convex
     assert vault.withdrawalQueue(0) == cvx_strat
     assert vault.strategies(cvx_strat)["performanceFee"] == 0
-    assert convex_strategy.creditThreshold() == 5e22  # 50k
+    assert convex_strategy.creditThreshold() == 50_000 * 10**18
     assert convex_strategy.healthCheck() == curve_global.healthCheck()
     assert (
         convex_strategy.harvestProfitMaxInUsdc()
@@ -170,13 +144,12 @@ def test_vault_deployment(
     assert convex_strategy.strategist() == curve_global.management()
     assert convex_strategy.keeper() == curve_global.keeper()
 
-    curve_strat = tx.events["NewAutomatedVault"]["curveStrategy"]
     if curve_strat != ZERO_ADDRESS:
-        curve_strategy = StrategyCurveBoostedFactoryClonable.at(curve_strat)
+        curve_strategy = project.StrategyCurveBoostedFactoryClonable.at(curve_strat)
         # curve
         assert vault.withdrawalQueue(1) == curve_strat
         assert vault.strategies(curve_strat)["performanceFee"] == 0
-        assert curve_strategy.creditThreshold() == 5e22  # 50k
+        assert curve_strategy.creditThreshold() == 50_000 * 10**18
         assert curve_strategy.healthCheck() == curve_global.healthCheck()
         assert curve_strategy.localKeepCRV() == curve_global.keepCRV()
         assert curve_strategy.curveVoter() == curve_global.curveVoter()
@@ -184,14 +157,13 @@ def test_vault_deployment(
         assert curve_strategy.strategist() == curve_global.management()
         assert curve_strategy.keeper() == curve_global.keeper()
 
-    frax_strat = tx.events["NewAutomatedVault"]["convexFraxStrategy"]
     if frax_strat != ZERO_ADDRESS:
-        frax_strategy = StrategyConvexFraxFactoryClonable.at(frax_strat)
+        frax_strategy = project.StrategyConvexFraxFactoryClonable.at(frax_strat)
         # frax
         assert vault.withdrawalQueue(2) == frax_strat
         assert vault.strategies(frax_strat)["performanceFee"] == 0
         print("All three strategies attached in order")
-        assert frax_strategy.creditThreshold() == 5e22  # 50k
+        assert frax_strategy.creditThreshold() == 50_000 * 10**18
         assert frax_strategy.healthCheck() == curve_global.healthCheck()
         assert (
             frax_strategy.harvestProfitMaxInUsdc()
@@ -220,7 +192,6 @@ def test_vault_deployment(
     print(
         "Check out our keeper wrapper, make sure it works as intended for all strategies"
     )
-    rando = accounts[5]
     assert convex_strategy.keeper() == keeper_wrapper
     if curve_strat != ZERO_ADDRESS:
         assert curve_strategy.keeper() == keeper_wrapper
@@ -233,7 +204,9 @@ def test_vault_deployment(
         vault.updateStrategyDebtRatio(curve_strategy, 3000, sender=gov)
         vault.updateStrategyDebtRatio(convex_strategy, 4000, sender=gov)
         # for testing, let's deposit anything above 1e18 since we might be doing frxETH
-        frax_strategy.setDepositParams(1e18, 5_000_000e18, True, sender=gov)
+        frax_strategy.setDepositParams(
+            1 * 10**18, 5_000_000 * 10**18, True, sender=gov
+        )
     else:
         vault.updateStrategyDebtRatio(curve_strategy, 0, sender=gov)
         vault.updateStrategyDebtRatio(convex_strategy, 0, sender=gov)
@@ -276,7 +249,7 @@ def test_vault_deployment(
             9,
             profit_whale,
             profit_amount,
-            2,
+            4,
         )
 
     # assert that money deposited to convex and curve
@@ -292,7 +265,7 @@ def test_vault_deployment(
         print("Check that anyone can harvest again to remove all funds")
         vault.updateStrategyDebtRatio(frax_strategy, 0, sender=gov)
         if not tests_using_tenderly:
-            with brownie.reverts():
+            with ape.reverts():
                 vault.updateStrategyDebtRatio(frax_strategy, 10, sender=whale)
         print("But only gov/management can adjust debt ratios")
 
@@ -304,7 +277,7 @@ def test_vault_deployment(
             9,
             profit_whale,
             profit_amount,
-            2,
+            4,
         )
 
         # harvest again so the strategy reports the profit
@@ -317,7 +290,7 @@ def test_vault_deployment(
                 gov,
                 profit_whale,
                 profit_amount,
-                2,
+                4,
             )
 
         assert frax_strategy.estimatedTotalAssets() == 0
@@ -325,7 +298,7 @@ def test_vault_deployment(
         print("Check that anyone can harvest again to remove all funds")
         vault.updateStrategyDebtRatio(convex_strategy, 0, sender=gov)
         if not tests_using_tenderly:
-            with brownie.reverts():
+            with ape.reverts():
                 vault.updateStrategyDebtRatio(convex_strategy, 10, sender=whale)
         print("But only gov/management can adjust debt ratios")
 
@@ -360,18 +333,15 @@ def test_vault_deployment(
 
     if not tests_using_tenderly:
         # can't deploy another of the same vault permissionlessly
-        with brownie.reverts():
+        with ape.reverts():
             tx = curve_global.createNewVaultsAndStrategies(gauge, sender=whale)
 
         # we can't do our previously existing vault either
-        with brownie.reverts():
+        with ape.reverts():
             tx = curve_global.createNewVaultsAndStrategies(legacy_gauge, sender=whale)
 
 
 def test_permissioned_vault(
-    StrategyConvexFactoryClonable,
-    StrategyCurveBoostedFactoryClonable,
-    StrategyConvexFraxFactoryClonable,
     strategist,
     curve_global,
     gov,
@@ -392,37 +362,8 @@ def test_permissioned_vault(
     curve_template,
     frax_booster,
 ):
-    ############# skip all of this since factory is already live
-
-    # deploying curve global with frax strategies doesn't work unless with tenderly;
-    # ganache crashes because of the try-catch in the fraxPid function
-    # however, I usually do hacky coverage testing (commenting out section in curveGlobal)
-
-    # once our factory is deployed, setup the factory from gov
-    # registry_owner = accounts.at(new_registry.owner(), force=True)
-    # new_registry.setApprovedVaultsOwner(curve_global, True, sender=registry_owner)
-    # new_registry.setVaultEndorsers(curve_global, True, sender=registry_owner)
-
-    # update the strategy on our voter
-    # voter.setStrategy(new_proxy.address, sender=gov)
-
-    # set our factory address on the strategy proxy
-    # new_proxy.setFactory(curve_global.address, sender=gov)
-
-    #############
-
-    # this will crash if we're not using tenderly
-    if not tests_using_tenderly:
-        return
-
-    # update our frax booster to v2
-    if curve_global.fraxBooster() != frax_booster.address:
-        curve_global.setFraxBooster(frax_booster, sender=gov)
-        print("Updated Frax Booster")
-
-    print("New proxy updated, factory added to proxy")
-
     # make sure our curve global can own vaults and endorse them
+    whale.balance += 10 * 10**18
     assert new_registry.approvedVaultsOwner(curve_global)
     assert new_registry.vaultEndorsers(curve_global)
     assert curve_global.registry() == new_registry.address
@@ -471,7 +412,7 @@ def test_permissioned_vault(
 
     # make sure not just anyone can create a permissioned vault
     if not tests_using_tenderly:
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.createNewVaultsAndStrategiesPermissioned(
                 gauge, "poop", "poop", sender=whale
             )
@@ -479,12 +420,16 @@ def test_permissioned_vault(
     tx = curve_global.createNewVaultsAndStrategiesPermissioned(
         gauge, "stuff", "stuff", sender=gov
     )
-    vault_address = tx.events["NewAutomatedVault"]["vault"]
+
+    for log in curve_global.NewAutomatedVault.from_receipt(tx):
+        vault_address = log.vault
+        cvx_strat = log.convexStrategy
+        curve_strat = log.curveStrategy
+        frax_strat = log.convexFraxStrategy
+
     vault = Contract(vault_address)
     print("Vault name:", vault.name())
-
     print("Vault endorsed:", vault_address)
-    info = tx.events["NewAutomatedVault"]
 
     # check that everything is setup properly for our vault
     assert vault.governance() == curve_global.address
@@ -497,16 +442,13 @@ def test_permissioned_vault(
     assert vault.performanceFee() == curve_global.performanceFee()
     print("Asserts good for our vault")
 
-    print("Here's our new vault created event:", info, "\n")
-
     # convex
-    cvx_strat = tx.events["NewAutomatedVault"]["convexStrategy"]
-    convex_strategy = StrategyConvexFactoryClonable.at(cvx_strat)
+    convex_strategy = project.StrategyConvexFactoryClonable.at(cvx_strat)
     print("Convex strategy:", cvx_strat)
 
     assert vault.withdrawalQueue(0) == cvx_strat
     assert vault.strategies(cvx_strat)["performanceFee"] == 0
-    assert convex_strategy.creditThreshold() == 5e22  # 50k
+    assert convex_strategy.creditThreshold() == 50_000 * 10**18  # 50k
     assert convex_strategy.healthCheck() == curve_global.healthCheck()
     assert (
         convex_strategy.harvestProfitMaxInUsdc()
@@ -527,14 +469,13 @@ def test_permissioned_vault(
     print("Asserts good for our convex strategy")
 
     # curve
-    curve_strat = tx.events["NewAutomatedVault"]["curveStrategy"]
-    curve_strategy = StrategyCurveBoostedFactoryClonable.at(curve_strat)
+    curve_strategy = project.StrategyCurveBoostedFactoryClonable.at(curve_strat)
     print("Curve strategy:", curve_strat)
 
     # curve
     assert vault.withdrawalQueue(1) == curve_strat
     assert vault.strategies(curve_strat)["performanceFee"] == 0
-    assert curve_strategy.creditThreshold() == 5e22  # 50k
+    assert curve_strategy.creditThreshold() == 50_000 * 10**18  # 50k
     assert curve_strategy.healthCheck() == curve_global.healthCheck()
     assert curve_strategy.localKeepCRV() == curve_global.keepCRV()
     assert curve_strategy.curveVoter() == curve_global.curveVoter()
@@ -544,14 +485,13 @@ def test_permissioned_vault(
     print("Asserts good for our curve strategy")
 
     # frax
-    frax_strat = tx.events["NewAutomatedVault"]["convexFraxStrategy"]
     if frax_strat != ZERO_ADDRESS:
-        frax_strategy = StrategyConvexFraxFactoryClonable.at(frax_strat)
+        frax_strategy = project.StrategyConvexFraxFactoryClonable.at(frax_strat)
         print("Frax strategy:", frax_strat)
         assert vault.withdrawalQueue(2) == frax_strat
         assert vault.strategies(frax_strat)["performanceFee"] == 0
         print("All three strategies attached in order")
-        assert frax_strategy.creditThreshold() == 5e22  # 50k
+        assert frax_strategy.creditThreshold() == 50_000 * 10**18  # 50k
         assert frax_strategy.healthCheck() == curve_global.healthCheck()
         assert (
             frax_strategy.harvestProfitMaxInUsdc()
@@ -589,7 +529,7 @@ def test_permissioned_vault(
 
     if not tests_using_tenderly:
         # we can't deploy another frax vault because we already have a strategy on our proxy for that gauge
-        with brownie.reverts():
+        with ape.reverts():
             tx = curve_global.createNewVaultsAndStrategiesPermissioned(
                 gauge, "test2", "test2", sender=gov
             )
@@ -611,6 +551,7 @@ def test_curve_global_setters_and_views(
     frax_template,
     curve_template,
     tests_using_tenderly,
+    factory_management,
 ):
     ############# skip all of this since factory is already live
 
@@ -619,15 +560,11 @@ def test_curve_global_setters_and_views(
     # new_registry.setApprovedVaultsOwner(curve_global, True, sender=registry_owner)
     # new_registry.setVaultEndorsers(curve_global, True, sender=registry_owner)
 
-    # update the strategy on our voter
-    # voter.setStrategy(new_proxy.address, sender=gov)
-
     # set our factory address on the strategy proxy
     # new_proxy.setFactory(curve_global.address, sender=gov)
 
     #############
-
-    print("New proxy updated, factory added to proxy")
+    whale.balance += 10 * 10**18
 
     # make sure our curve global can own vaults and endorse them
     assert new_registry.approvedVaultsOwner(curve_global)
@@ -643,13 +580,12 @@ def test_curve_global_setters_and_views(
     # check our views
     print("Time to check the views")
 
-    # this one causes our coverage tests to crash, so make it call only
-    _pid = curve_global.getPid.call(gauge)
+    _pid = curve_global.getPid(gauge)
     assert _pid == pid
     print("PID is good")
 
     # trying to pull a PID for an address that doesn't have one should return max uint
-    fake_pid = curve_global.getPid.call(gov)
+    fake_pid = curve_global.getPid(gov)
     assert fake_pid == 2**256 - 1
     print("Fake gauge gives max uint")
 
@@ -680,18 +616,18 @@ def test_curve_global_setters_and_views(
 
     # check our setters
     if not tests_using_tenderly:
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setKeepCVX(69, gov, sender=whale)
     curve_global.setKeepCVX(0, gov, sender=gov)
     curve_global.setKeepCVX(69, gov, sender=gov)
     assert curve_global.keepCVX() == 69
     assert curve_global.convexVoter() == gov.address
     if not tests_using_tenderly:
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setKeepCVX(69, ZERO_ADDRESS, sender=gov)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setKeepCVX(10_001, gov, sender=gov)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setKeepCRV(69, gov, sender=whale)
 
     curve_global.setKeepCRV(0, gov, sender=gov)
@@ -699,11 +635,11 @@ def test_curve_global_setters_and_views(
     assert curve_global.keepCRV() == 69
     assert curve_global.curveVoter() == gov.address
     if not tests_using_tenderly:
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setKeepCRV(69, ZERO_ADDRESS, sender=gov)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setKeepCRV(10_001, gov, sender=gov)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setKeepFXS(69, gov, sender=whale)
 
     curve_global.setKeepFXS(0, gov, sender=gov)
@@ -711,74 +647,77 @@ def test_curve_global_setters_and_views(
     assert curve_global.keepFXS() == 69
     assert curve_global.fraxVoter() == gov.address
     if not tests_using_tenderly:
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setKeepFXS(69, ZERO_ADDRESS, sender=gov)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setKeepFXS(10_001, gov, sender=gov)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setDepositLimit(69, sender=whale)
 
+    # give some ETH
+    factory_management.balance += 10 * 10**18
+
     curve_global.setDepositLimit(0, sender=gov)
-    curve_global.setDepositLimit(69, sender=curve_global.management())
+    curve_global.setDepositLimit(69, sender=factory_management)
     assert curve_global.depositLimit() == 69
 
     if not tests_using_tenderly:
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setHarvestProfitMaxInUsdc(69, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setHarvestProfitMinInUsdc(69, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setKeeper(gov, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setHealthcheck(gov, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setRegistry(gov, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setGuardian(gov, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setConvexPoolManager(gov, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setBooster(gov, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setGovernance(gov, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setManagement(gov, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setTreasury(gov, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setGuardian(gov, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setTradeFactory(gov, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setBaseFeeOracle(gov, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setConvexStratImplementation(gov, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setCurveStratImplementation(gov, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setManagementFee(69, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setPerformanceFee(69, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setPerformanceFee(9999, sender=gov)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setManagementFee(9999, sender=gov)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.setOwner(gov, sender=whale)
-        with brownie.reverts():
+        with ape.reverts():
             curve_global.acceptOwner(sender=whale)
 
     curve_global.setHarvestProfitMaxInUsdc(0, sender=gov)
-    curve_global.setHarvestProfitMaxInUsdc(69, sender=curve_global.management())
+    curve_global.setHarvestProfitMaxInUsdc(69, sender=factory_management)
     assert curve_global.harvestProfitMaxInUsdc() == 69
     curve_global.setHarvestProfitMinInUsdc(0, sender=gov)
-    curve_global.setHarvestProfitMinInUsdc(69, sender=curve_global.management())
+    curve_global.setHarvestProfitMinInUsdc(69, sender=factory_management)
     assert curve_global.harvestProfitMinInUsdc() == 69
     curve_global.setKeeper(whale, sender=gov)
-    curve_global.setKeeper(gov, sender=curve_global.management())
+    curve_global.setKeeper(gov, sender=factory_management)
     assert curve_global.keeper() == gov.address
     curve_global.setHealthcheck(whale, sender=gov)
-    curve_global.setHealthcheck(gov, sender=curve_global.management())
+    curve_global.setHealthcheck(gov, sender=factory_management)
     assert curve_global.healthCheck() == gov.address
     curve_global.setRegistry(gov, sender=gov)
     assert curve_global.registry() == gov.address

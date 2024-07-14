@@ -21,6 +21,7 @@ def test_withdraw_after_donation_1(
     target,
     use_yswaps,
     RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     vault_address,
     which_strategy,
 ):
@@ -67,7 +68,7 @@ def test_withdraw_after_donation_1(
     assert strategy_params["totalDebt"] == initial_debt
     assert vault.creditAvailable(strategy) == 0
 
-    # our whale donates to the vault, what a nice person! 🐳
+    # our whale donates to the strategy, what a nice person! 🐳
     donation = int(amount / 2)
     token.transfer(strategy, donation, sender=whale)
 
@@ -103,20 +104,24 @@ def test_withdraw_after_donation_1(
     assert strategy_params["totalGain"] == 0
     assert strategy_params["debtRatio"] == 5000
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.creditAvailable(strategy) == 0
+
+    # our withdrawal will have reduced our strategy's debt
     assert (
         pytest.approx(initial_debt, rel=RELATIVE_APPROX)
         == strategy_params["totalDebt"] + to_withdraw
     )
+
+    # since we reduced the debtRatio by half, that should also be the amount of debtOutstanding we have
     assert (
         pytest.approx(vault.debtOutstanding(strategy), rel=RELATIVE_APPROX)
         == strategy_params["totalDebt"] / 2
     )
 
-    # after our donation, best to use health check in case our donation profit is too big
+    # after our donation, best to turn off health check in case our donation profit is too big
     strategy.setDoHealthCheck(False, sender=gov)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -133,21 +138,27 @@ def test_withdraw_after_donation_1(
     strategy_params = check_status(strategy, vault)
 
     # make sure things are going as we expect
+    # yswaps will not have taken any generated yield as profit yet (next harvest will)
     if use_yswaps or no_profit:
         assert strategy_params["totalGain"] == donation
     else:
         assert strategy_params["totalGain"] > donation
     assert strategy_params["debtRatio"] == 5000
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.debtOutstanding(strategy) == 0
     assert vault.creditAvailable(strategy) > 0
+
+    # our total debt will now be half of our initial debt minus the amount withdrawn
     assert (
         pytest.approx(strategy_params["totalDebt"], rel=RELATIVE_APPROX)
         == (initial_debt - to_withdraw) / 2
     )
+
+    # earn some profit (needed for prisma since it doesn't earn every block)
+    increase_time(chain, sleep_time)
 
     # harvest again so the strategy reports the profit
     if use_yswaps:
@@ -185,29 +196,29 @@ def test_withdraw_after_donation_1(
     assert strategy_params["totalGain"] > donation
     assert strategy_params["debtRatio"] == 5000
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.debtOutstanding(strategy) == 0
     assert vault.creditAvailable(strategy) > 0
 
-    # we haven't sent any profit back to the strategy yet
+    # we now send (half) of our donation that we took as profit back to the strategy
     assert (
         pytest.approx(strategy_params["totalDebt"], rel=RELATIVE_APPROX)
-        == (initial_debt - to_withdraw) / 2
+        == (initial_debt - to_withdraw + donation) / 2
     )
 
     # specifically check that our profit is greater than our donation or at least close if we get slippage on deposit/withdrawal and have no profit
     profit = new_params["totalGain"] - prev_params["totalGain"]
     if no_profit:
-        assert pytest.approx(profit, rel=RELATIVE_APPROX) == donation
+        assert pytest.approx(profit, abs=ABSOLUTE_APPROX) == donation
     else:
         assert profit > donation
 
     # check that we didn't add any more loss, or close if we get slippage on deposit/withdrawal
     if is_slippery:
         assert (
-            pytest.approx(new_params["totalLoss"], rel=RELATIVE_APPROX)
+            pytest.approx(new_params["totalLoss"], abs=ABSOLUTE_APPROX)
             == prev_params["totalLoss"]
         )
     else:
@@ -245,6 +256,7 @@ def test_withdraw_after_donation_2(
     target,
     use_yswaps,
     RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     vault_address,
     which_strategy,
 ):
@@ -323,7 +335,7 @@ def test_withdraw_after_donation_2(
     assert strategy_params["totalGain"] == 0
     assert strategy_params["debtRatio"] == 0
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.creditAvailable(strategy) == 0
@@ -359,7 +371,7 @@ def test_withdraw_after_donation_2(
         assert strategy_params["totalGain"] > donation
     assert strategy_params["debtRatio"] == 0
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert strategy_params["totalDebt"] == 0
@@ -367,6 +379,9 @@ def test_withdraw_after_donation_2(
 
     # zero since we set our DR to zero
     assert vault.creditAvailable(strategy) == 0
+
+    # earn some profit (needed for prisma since it doesn't earn every block)
+    increase_time(chain, sleep_time)
 
     # harvest again so the strategy reports the profit
     if use_yswaps:
@@ -404,7 +419,7 @@ def test_withdraw_after_donation_2(
     assert strategy_params["totalGain"] > donation
     assert strategy_params["debtRatio"] == 0
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.debtOutstanding(strategy) == 0
@@ -413,7 +428,7 @@ def test_withdraw_after_donation_2(
     # specifically check that our profit is greater than our donation or at least close if we get slippage on deposit/withdrawal and have no profit
     profit = new_params["totalGain"] - prev_params["totalGain"]
     if no_profit:
-        assert pytest.approx(profit, rel=RELATIVE_APPROX) == donation
+        assert pytest.approx(profit, abs=ABSOLUTE_APPROX) == donation
     else:
         assert profit > donation
 
@@ -453,6 +468,7 @@ def test_withdraw_after_donation_3(
     target,
     use_yswaps,
     RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     vault_address,
     which_strategy,
 ):
@@ -531,7 +547,7 @@ def test_withdraw_after_donation_3(
     assert strategy_params["totalGain"] == 0
     assert strategy_params["debtRatio"] == 0
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.creditAvailable(strategy) == 0
@@ -567,7 +583,7 @@ def test_withdraw_after_donation_3(
         assert strategy_params["totalGain"] > donation
     assert strategy_params["debtRatio"] == 0
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert strategy_params["totalDebt"] == 0
@@ -575,6 +591,9 @@ def test_withdraw_after_donation_3(
 
     # zero since we set our DR to zero
     assert vault.creditAvailable(strategy) == 0
+
+    # earn some profit (needed for prisma since it doesn't earn every block)
+    increase_time(chain, sleep_time)
 
     # harvest again so the strategy reports the profit
     if use_yswaps:
@@ -612,7 +631,7 @@ def test_withdraw_after_donation_3(
     assert strategy_params["totalGain"] > donation
     assert strategy_params["debtRatio"] == 0
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.debtOutstanding(strategy) == 0
@@ -621,7 +640,7 @@ def test_withdraw_after_donation_3(
     # specifically check that our profit is greater than our donation or at least close if we get slippage on deposit/withdrawal and have no profit
     profit = new_params["totalGain"] - prev_params["totalGain"]
     if no_profit:
-        assert pytest.approx(profit, rel=RELATIVE_APPROX) == donation
+        assert pytest.approx(profit, abs=ABSOLUTE_APPROX) == donation
     else:
         assert profit > donation
 
@@ -661,6 +680,7 @@ def test_withdraw_after_donation_4(
     target,
     use_yswaps,
     RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     vault_address,
     which_strategy,
 ):
@@ -743,7 +763,7 @@ def test_withdraw_after_donation_4(
     assert strategy_params["totalGain"] == 0
     assert strategy_params["debtRatio"] == 5000
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.creditAvailable(strategy) == 0
@@ -779,7 +799,7 @@ def test_withdraw_after_donation_4(
         assert strategy_params["totalGain"] > donation
     assert strategy_params["debtRatio"] == 5000
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.debtOutstanding(strategy) == 0
@@ -788,6 +808,9 @@ def test_withdraw_after_donation_4(
         pytest.approx(strategy_params["totalDebt"], rel=RELATIVE_APPROX)
         == (initial_debt - to_withdraw) / 2
     )
+
+    # earn some profit (needed for prisma since it doesn't earn every block)
+    increase_time(chain, sleep_time)
 
     # harvest again so the strategy reports the profit
     if use_yswaps:
@@ -825,22 +848,22 @@ def test_withdraw_after_donation_4(
     assert strategy_params["totalGain"] > donation
     assert strategy_params["debtRatio"] == 5000
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.debtOutstanding(strategy) == 0
     assert vault.creditAvailable(strategy) > 0
 
-    # we haven't sent any profit back to the strategy yet
+    # we now send (half) of our donation that we took as profit back to the strategy
     assert (
         pytest.approx(strategy_params["totalDebt"], rel=RELATIVE_APPROX)
-        == (initial_debt - to_withdraw) / 2
+        == (initial_debt - to_withdraw + donation) / 2
     )
 
     # specifically check that our profit is greater than our donation or at least close if we get slippage on deposit/withdrawal and have no profit
     profit = new_params["totalGain"] - prev_params["totalGain"]
     if no_profit:
-        assert pytest.approx(profit, rel=RELATIVE_APPROX) == donation
+        assert pytest.approx(profit, abs=ABSOLUTE_APPROX) == donation
     else:
         assert profit > donation
 
@@ -885,6 +908,7 @@ def test_withdraw_after_donation_5(
     target,
     use_yswaps,
     RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     vault_address,
     which_strategy,
 ):
@@ -949,7 +973,7 @@ def test_withdraw_after_donation_5(
     assert strategy_params["totalGain"] == 0
     assert strategy_params["debtRatio"] == 10_000
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.creditAvailable(strategy) == 0
@@ -982,7 +1006,7 @@ def test_withdraw_after_donation_5(
         assert strategy_params["totalGain"] > donation
     assert strategy_params["debtRatio"] == 10_000
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.debtOutstanding(strategy) == 0
@@ -991,6 +1015,9 @@ def test_withdraw_after_donation_5(
         pytest.approx(initial_debt, rel=RELATIVE_APPROX)
         == strategy_params["totalDebt"] + to_withdraw
     )
+
+    # earn some profit (needed for prisma since it doesn't earn every block)
+    increase_time(chain, sleep_time)
 
     # harvest again so the strategy reports the profit
     if use_yswaps:
@@ -1028,20 +1055,22 @@ def test_withdraw_after_donation_5(
     assert strategy_params["totalGain"] > donation
     assert strategy_params["debtRatio"] == 10_000
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.debtOutstanding(strategy) == 0
     assert vault.creditAvailable(strategy) > 0
+
+    # donation will have been sent back to the strategy at this point, so include it
     assert (
         pytest.approx(initial_debt, rel=RELATIVE_APPROX)
-        == strategy_params["totalDebt"] + to_withdraw
+        == strategy_params["totalDebt"] + to_withdraw - donation
     )
 
     # specifically check that our profit is greater than our donation or at least close if we get slippage on deposit/withdrawal and have no profit
     profit = new_params["totalGain"] - prev_params["totalGain"]
     if no_profit:
-        assert pytest.approx(profit, rel=RELATIVE_APPROX) == donation
+        assert pytest.approx(profit, abs=ABSOLUTE_APPROX) == donation
     else:
         assert profit > donation
 
@@ -1086,6 +1115,7 @@ def test_withdraw_after_donation_6(
     target,
     use_yswaps,
     RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     vault_address,
     which_strategy,
 ):
@@ -1150,14 +1180,17 @@ def test_withdraw_after_donation_6(
     assert strategy_params["totalGain"] == 0
     assert strategy_params["debtRatio"] == 10_000
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.creditAvailable(strategy) == 0
+
+    # at this point, we haven't realized any of the donation as profit, just reduced debt via the withdrawal
     assert (
         pytest.approx(initial_debt, rel=RELATIVE_APPROX)
         == strategy_params["totalDebt"] + to_withdraw
     )
+
     assert vault.debtOutstanding(strategy) == 0
 
     # after our donation, best to use health check in case we have a big profit
@@ -1183,15 +1216,20 @@ def test_withdraw_after_donation_6(
         assert strategy_params["totalGain"] > donation
     assert strategy_params["debtRatio"] == 10_000
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.debtOutstanding(strategy) == 0
     assert vault.creditAvailable(strategy) > 0
+
+    # now we've taken the donation as profit, but still haven't sent it back to the strategy
     assert (
         pytest.approx(initial_debt, rel=RELATIVE_APPROX)
         == strategy_params["totalDebt"] + to_withdraw
     )
+
+    # earn some profit (needed for prisma since it doesn't earn every block)
+    increase_time(chain, sleep_time)
 
     # harvest again so the strategy reports the profit
     if use_yswaps:
@@ -1229,20 +1267,20 @@ def test_withdraw_after_donation_6(
     assert strategy_params["totalGain"] > donation
     assert strategy_params["debtRatio"] == 10_000
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.debtOutstanding(strategy) == 0
     assert vault.creditAvailable(strategy) > 0
     assert (
         pytest.approx(initial_debt, rel=RELATIVE_APPROX)
-        == strategy_params["totalDebt"] + to_withdraw
+        == strategy_params["totalDebt"] + to_withdraw - donation
     )
 
     # specifically check that our profit is greater than our donation or at least close if we get slippage on deposit/withdrawal and have no profit
     profit = new_params["totalGain"] - prev_params["totalGain"]
     if no_profit:
-        assert pytest.approx(profit, rel=RELATIVE_APPROX) == donation
+        assert pytest.approx(profit, abs=ABSOLUTE_APPROX) == donation
     else:
         assert profit > donation
 
@@ -1290,6 +1328,7 @@ def test_withdraw_after_donation_7(
     which_strategy,
     use_yswaps,
     RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
 ):
 
     ## deposit to the vault after approving
@@ -1367,7 +1406,7 @@ def test_withdraw_after_donation_7(
     assert strategy_params["totalGain"] == 0
     assert strategy_params["debtRatio"] == 0
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.creditAvailable(strategy) == 0
@@ -1403,7 +1442,7 @@ def test_withdraw_after_donation_7(
         assert strategy_params["totalGain"] > donation
     assert strategy_params["debtRatio"] == 0
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert strategy_params["totalDebt"] == 0
@@ -1411,6 +1450,9 @@ def test_withdraw_after_donation_7(
 
     # zero since we set our DR to zero
     assert vault.creditAvailable(strategy) == 0
+
+    # earn some profit (needed for prisma since it doesn't earn every block)
+    increase_time(chain, sleep_time)
 
     # harvest again so the strategy reports the profit
     if use_yswaps:
@@ -1448,7 +1490,7 @@ def test_withdraw_after_donation_7(
     assert strategy_params["totalGain"] > donation
     assert strategy_params["debtRatio"] == 0
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.debtOutstanding(strategy) == 0
@@ -1457,7 +1499,7 @@ def test_withdraw_after_donation_7(
     # specifically check that our profit is greater than our donation or at least close if we get slippage on deposit/withdrawal and have no profit
     profit = new_params["totalGain"] - prev_params["totalGain"]
     if no_profit:
-        assert pytest.approx(profit, rel=RELATIVE_APPROX) == donation
+        assert pytest.approx(profit, abs=ABSOLUTE_APPROX) == donation
     else:
         assert profit > donation
 
@@ -1523,6 +1565,7 @@ def test_withdraw_after_donation_8(
     which_strategy,
     use_yswaps,
     RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
 ):
 
     ## deposit to the vault after approving
@@ -1600,7 +1643,7 @@ def test_withdraw_after_donation_8(
     assert strategy_params["totalGain"] == 0
     assert strategy_params["debtRatio"] == 0
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.creditAvailable(strategy) == 0
@@ -1636,7 +1679,7 @@ def test_withdraw_after_donation_8(
         assert strategy_params["totalGain"] > donation
     assert strategy_params["debtRatio"] == 0
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert strategy_params["totalDebt"] == 0
@@ -1644,6 +1687,9 @@ def test_withdraw_after_donation_8(
 
     # zero since we set our DR to zero
     assert vault.creditAvailable(strategy) == 0
+
+    # earn some profit (needed for prisma since it doesn't earn every block)
+    increase_time(chain, sleep_time)
 
     # harvest again so the strategy reports the profit
     if use_yswaps:
@@ -1682,7 +1728,7 @@ def test_withdraw_after_donation_8(
     assert strategy_params["totalGain"] > donation
     assert strategy_params["debtRatio"] == 0
     if is_slippery:
-        assert pytest.approx(strategy_params["totalLoss"], rel=RELATIVE_APPROX) == 0
+        assert pytest.approx(strategy_params["totalLoss"], abs=ABSOLUTE_APPROX) == 0
     else:
         assert strategy_params["totalLoss"] == 0
     assert vault.debtOutstanding(strategy) == 0
@@ -1691,7 +1737,7 @@ def test_withdraw_after_donation_8(
     # specifically check that our profit is greater than our donation or at least close if we get slippage on deposit/withdrawal and have no profit
     profit = new_params["totalGain"] - prev_params["totalGain"]
     if no_profit:
-        assert pytest.approx(profit, rel=RELATIVE_APPROX) == donation
+        assert pytest.approx(profit, abs=ABSOLUTE_APPROX) == donation
     else:
         assert profit > donation
 

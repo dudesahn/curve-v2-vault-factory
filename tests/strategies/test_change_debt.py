@@ -46,9 +46,7 @@ def test_change_debt(
 
     # debtRatio is in BPS (aka, max is 10,000, which represents 100%), and is a fraction of the funds that can be in the strategy
     starting_debt_ratio = vault.strategies(strategy)["debtRatio"]
-    reduced = int(
-        starting_debt_ratio / 2
-    )  # ape needs to be told this is an integer for some reason
+    reduced = int(starting_debt_ratio / 2)  # ape needs to be told this is an integer
     vault.updateStrategyDebtRatio(strategy, reduced, sender=gov)
     increase_time(chain, sleep_time)
 
@@ -60,11 +58,11 @@ def test_change_debt(
     assert (
         pytest.approx(vault.debtOutstanding(strategy), rel=RELATIVE_APPROX)
         == initial_debt / 2
-    )
+    )  # note that when reducing debt like this, because of how floats work, best to use relative approx instead of absolute
     assert strategy_params["totalDebt"] == initial_debt
     assert vault.creditAvailable(strategy) == 0
 
-    if which_strategy == 2:
+    if which_strategy == 4:
         # wait another week so our frax LPs are unlocked, need to do this when reducing debt or withdrawing
         increase_time(chain, 86400 * 7)
 
@@ -137,7 +135,7 @@ def test_change_debt(
         == strategy_params["totalDebt"]
     )
 
-    if which_strategy == 2:
+    if which_strategy == 4:
         # wait another week so our frax LPs are unlocked, need to do this when reducing debt or withdrawing
         increase_time(chain, 86400 * 7)
 
@@ -160,7 +158,7 @@ def test_change_debt(
     # set this true if no profit on this test. it is normal for a strategy to not generate profit here.
     # realistically only wrapped tokens or every-block earners will see profits (convex, etc).
     # also checked in test_change_debt
-    no_profit = True
+    no_profit = False
 
     # debtOutstanding should be zero, credit available will be much lower than previously but greater than zero (profits)
     # however, if the strategy has no profit, or has inconsistent profit-taking, then we can have no credit here
@@ -197,7 +195,7 @@ def test_change_debt(
         assert vault.pricePerShare() > starting_share_price
         assert strategy_params["totalLoss"] == 0
 
-    if which_strategy == 2:
+    if which_strategy == 4:
         # wait another week so our frax LPs are unlocked
         increase_time(chain, 86400 * 7)
 
@@ -287,6 +285,9 @@ def test_change_debt_with_profit(
     # we should have more assets but the same debt
     assert strategy.estimatedTotalAssets() > initial_strategy_assets
     assert strategy_params["totalDebt"] == initial_debt
+
+    # earn some profit (needed for prisma since it doesn't earn every block)
+    increase_time(chain, sleep_time)
 
     if which_strategy == 4:
         # wait another week so our frax LPs are unlocked, need to do this when reducing debt or withdrawing

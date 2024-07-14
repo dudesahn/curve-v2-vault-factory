@@ -79,7 +79,7 @@ def test_revoke_strategy_from_vault(
     profit_amount,
     target,
     use_yswaps,
-    RELATIVE_APPROX,
+    ABSOLUTE_APPROX,
     which_strategy,
 ):
 
@@ -108,7 +108,7 @@ def test_revoke_strategy_from_vault(
     # revoke and harvest
     vault.revokeStrategy(strategy.address, sender=gov)
 
-    if which_strategy == 2:
+    if which_strategy == 4:
         # wait another week so our frax LPs are unlocked, need to do this when reducing debt or withdrawing
         increase_time(chain, 86400 * 7)
 
@@ -148,11 +148,11 @@ def test_revoke_strategy_from_vault(
 
     if no_profit:
         assert (
-            pytest.approx(vault_assets_after_revoke, rel=RELATIVE_APPROX)
+            pytest.approx(vault_assets_after_revoke, abs=ABSOLUTE_APPROX)
             == vault_assets_starting
         )
         assert (
-            pytest.approx(token.balanceOf(vault), rel=RELATIVE_APPROX)
+            pytest.approx(token.balanceOf(vault), abs=ABSOLUTE_APPROX)
             == vault_holdings_starting + strategy_starting
         )
     else:
@@ -160,12 +160,12 @@ def test_revoke_strategy_from_vault(
         assert token.balanceOf(vault) > vault_holdings_starting + strategy_starting
 
     # should be zero in our strategy
-    assert pytest.approx(strategy_assets_after_revoke, rel=RELATIVE_APPROX) == 0
+    assert pytest.approx(strategy_assets_after_revoke, abs=ABSOLUTE_APPROX) == 0
 
     # simulate five days of waiting for share price to bump back up
     increase_time(chain, 86400 * 5)
 
-    if which_strategy == 2:
+    if which_strategy == 4:
         # wait another week so our frax LPs are unlocked
         increase_time(chain, 86400 * 7)
 
@@ -173,7 +173,7 @@ def test_revoke_strategy_from_vault(
     vault.withdraw(sender=whale)
     if no_profit:
         assert (
-            pytest.approx(token.balanceOf(whale), rel=RELATIVE_APPROX) == starting_whale
+            pytest.approx(token.balanceOf(whale), abs=ABSOLUTE_APPROX) == starting_whale
         )
     else:
         assert token.balanceOf(whale) > starting_whale
@@ -224,7 +224,7 @@ def test_setters(
                 strategy.setLockTime(2**256 - 1, sender=gov)
 
         # set our deposit params
-        maxToStake = amount * 0.75
+        maxToStake = int(amount * 0.75)
         minToStake = 100
         strategy.setDepositParams(minToStake, maxToStake, False, sender=gov)
         with ape.reverts():
@@ -252,11 +252,11 @@ def test_setters(
         strategy.harvest(sender=gov)
         assert strategy.estimatedTotalAssets() >= amount
 
-    # check that we have claimable rewards, have to call for frax tho
+    # check that we have claimable rewards
     if which_strategy == 4:
         increase_time(chain, 86400 * 7)
 
-        profit = strategy.claimableProfitInUsdc.call()
+        profit = strategy.claimableProfitInUsdc()
         assert profit > 0
         print("Claimable Profit:", profit / 10**6)
     elif which_strategy == 0:

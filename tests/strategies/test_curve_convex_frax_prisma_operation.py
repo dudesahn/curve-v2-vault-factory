@@ -412,7 +412,7 @@ def test_lower_keks(
     ## deposit to the vault after approving
     startingWhale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     newWhale = token.balanceOf(whale)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -425,7 +425,7 @@ def test_lower_keks(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -438,7 +438,7 @@ def test_lower_keks(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -451,7 +451,7 @@ def test_lower_keks(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -472,7 +472,7 @@ def test_lower_keks(
         vault.withdraw(sender=whale)
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
 
     tx = strategy.harvest(sender=gov)
@@ -490,7 +490,7 @@ def test_lower_keks(
 
     # can't harvest again as funds are locked, but only if we have something to harvest in
     with ape.reverts():
-        vault.deposit(amount / 20, sender=whale)
+        vault.deposit(int(amount / 20), sender=whale)
         (profit, loss, extra) = harvest_strategy(
             use_yswaps,
             strategy,
@@ -510,7 +510,7 @@ def test_lower_keks(
     strategy.setMaxKeks(4, sender=gov)
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -523,7 +523,7 @@ def test_lower_keks(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -536,7 +536,7 @@ def test_lower_keks(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -549,7 +549,7 @@ def test_lower_keks(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -627,7 +627,7 @@ def test_lower_keks_part_two(
     ## deposit to the vault after approving
     startingWhale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     newWhale = token.balanceOf(whale)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -640,7 +640,7 @@ def test_lower_keks_part_two(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -653,7 +653,7 @@ def test_lower_keks_part_two(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -669,7 +669,7 @@ def test_lower_keks_part_two(
     increase_time(chain, 86400 * 7)
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -682,7 +682,7 @@ def test_lower_keks_part_two(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -734,7 +734,7 @@ def test_increase_keks(
     ## deposit to the vault after approving
     startingWhale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     newWhale = token.balanceOf(whale)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -747,7 +747,7 @@ def test_increase_keks(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -760,7 +760,7 @@ def test_increase_keks(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -773,7 +773,7 @@ def test_increase_keks(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -786,7 +786,7 @@ def test_increase_keks(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -842,7 +842,7 @@ def test_withdraw_with_some_locked(
     ## deposit to the vault after approving
     startingWhale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     newWhale = token.balanceOf(whale)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -855,7 +855,7 @@ def test_withdraw_with_some_locked(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -868,7 +868,7 @@ def test_withdraw_with_some_locked(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -881,7 +881,7 @@ def test_withdraw_with_some_locked(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -894,7 +894,7 @@ def test_withdraw_with_some_locked(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -916,7 +916,7 @@ def test_withdraw_with_some_locked(
     increase_time(chain, 86400 * 3)
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -929,7 +929,7 @@ def test_withdraw_with_some_locked(
     )
 
     # withdraw from our first kek
-    vault.withdraw(1e18, sender=whale)
+    vault.withdraw(10**18, sender=whale)
 
 
 # test manual withdrawals
@@ -965,7 +965,7 @@ def test_manual_withdrawal(
     ## deposit to the vault after approving
     startingWhale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     newWhale = token.balanceOf(whale)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -978,7 +978,7 @@ def test_manual_withdrawal(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -991,7 +991,7 @@ def test_manual_withdrawal(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1004,7 +1004,7 @@ def test_manual_withdrawal(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1017,7 +1017,7 @@ def test_manual_withdrawal(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1080,15 +1080,15 @@ def test_lower_keks_add_to_existing(
         return
 
     # set it so we don't add new keks and only deposit to existing ones, once we reach our max
-    strategy.setDepositParams(1e18, 5_000_000e18, True, sender=gov)
+    strategy.setDepositParams(10**18, 5_000_000 * 10**18, True, sender=gov)
 
     # since we do so many harvests here, reduce our profit_amount
-    profit_amount = profit_amount / 2.5
+    profit_amount = int(profit_amount / 2.5)
 
     ## deposit to the vault after approving
     startingWhale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     newWhale = token.balanceOf(whale)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1101,7 +1101,7 @@ def test_lower_keks_add_to_existing(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1114,7 +1114,7 @@ def test_lower_keks_add_to_existing(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1127,7 +1127,7 @@ def test_lower_keks_add_to_existing(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1148,7 +1148,7 @@ def test_lower_keks_add_to_existing(
         vault.withdraw(sender=whale)
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
 
     tx = strategy.harvest(sender=gov)
@@ -1166,7 +1166,7 @@ def test_lower_keks_add_to_existing(
 
     # can't harvest again as funds are locked, but only if we have something to harvest in
     # ^^ this is from the normal test, obvs not true here
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
         strategy,
@@ -1186,7 +1186,7 @@ def test_lower_keks_add_to_existing(
     strategy.setMaxKeks(4, sender=gov)
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1199,7 +1199,7 @@ def test_lower_keks_add_to_existing(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1212,7 +1212,7 @@ def test_lower_keks_add_to_existing(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1225,7 +1225,7 @@ def test_lower_keks_add_to_existing(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1298,7 +1298,7 @@ def test_lower_keks_part_two_add_to_existing(
         return
 
     # set it so we don't add new keks and only deposit to existing ones, once we reach our max
-    strategy.setDepositParams(1e18, 5_000_000e18, True, sender=gov)
+    strategy.setDepositParams(10**18, 5_000_000 * 10**18, True, sender=gov)
 
     # lower it immediately
     strategy.setMaxKeks(3, sender=gov)
@@ -1306,7 +1306,7 @@ def test_lower_keks_part_two_add_to_existing(
     ## deposit to the vault after approving
     startingWhale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     newWhale = token.balanceOf(whale)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1319,7 +1319,7 @@ def test_lower_keks_part_two_add_to_existing(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1332,7 +1332,7 @@ def test_lower_keks_part_two_add_to_existing(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1348,7 +1348,7 @@ def test_lower_keks_part_two_add_to_existing(
     increase_time(chain, 86400 * 7)
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1361,7 +1361,7 @@ def test_lower_keks_part_two_add_to_existing(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1411,12 +1411,12 @@ def test_increase_keks_add_to_existing(
         return
 
     # set it so we don't add new keks and only deposit to existing ones, once we reach our max
-    strategy.setDepositParams(1e18, 5_000_000e18, True, sender=gov)
+    strategy.setDepositParams(10**18, 5_000_000 * 10**18, True, sender=gov)
 
     ## deposit to the vault after approving
     startingWhale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     newWhale = token.balanceOf(whale)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1429,7 +1429,7 @@ def test_increase_keks_add_to_existing(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1442,7 +1442,7 @@ def test_increase_keks_add_to_existing(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1455,7 +1455,7 @@ def test_increase_keks_add_to_existing(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1468,7 +1468,7 @@ def test_increase_keks_add_to_existing(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1522,15 +1522,15 @@ def test_keks_add_to_existing(
         return
 
     # set it so we don't add new keks and only deposit to existing ones, once we reach our max
-    strategy.setDepositParams(1e18, 5_000_000e18, True, sender=gov)
+    strategy.setDepositParams(10**18, 5_000_000 * 10**18, True, sender=gov)
 
     # since we do so many harvests here, reduce our profit_amount
-    profit_amount = profit_amount / 2.5
+    profit_amount = int(profit_amount / 2.5)
 
     ## deposit to the vault after approving
     startingWhale = token.balanceOf(whale)
     token.approve(vault, 2**256 - 1, sender=whale)
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     newWhale = token.balanceOf(whale)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1543,7 +1543,7 @@ def test_keks_add_to_existing(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1556,7 +1556,7 @@ def test_keks_add_to_existing(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1569,7 +1569,7 @@ def test_keks_add_to_existing(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1582,7 +1582,7 @@ def test_keks_add_to_existing(
     )
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1605,7 +1605,7 @@ def test_keks_add_to_existing(
 
     # make sure that a different kek is increasing in size each time
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1636,7 +1636,7 @@ def test_keks_add_to_existing(
     assert len(output) == 5
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1665,7 +1665,7 @@ def test_keks_add_to_existing(
     assert len(output) == 5
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1694,7 +1694,7 @@ def test_keks_add_to_existing(
     assert len(output) == 5
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1723,7 +1723,7 @@ def test_keks_add_to_existing(
     assert len(output) == 5
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1752,7 +1752,7 @@ def test_keks_add_to_existing(
     assert len(output) == 5
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1781,7 +1781,7 @@ def test_keks_add_to_existing(
     assert len(output) == 5
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,
@@ -1810,7 +1810,7 @@ def test_keks_add_to_existing(
     assert len(output) == 5
 
     # deposit and harvest multiple separate times to increase our nextKek
-    vault.deposit(amount / 20, sender=whale)
+    vault.deposit(int(amount / 20), sender=whale)
     increase_time(chain, 86400)
     (profit, loss, extra) = harvest_strategy(
         use_yswaps,

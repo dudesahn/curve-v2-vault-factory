@@ -62,6 +62,7 @@ def harvest_strategy(
         print("Claim or not:", claim_or_not)
         strategy.setClaimParams(force_claim, claim_or_not, sender=vault.governance())
 
+    # passing gov as 9 means this is a permissionless keeper harvest (and we already called strategy.harvest beforehand)
     if gov != 9:
         tx = strategy.harvest(sender=gov)
         for log in strategy.Harvested.from_receipt(tx):
@@ -84,6 +85,7 @@ def harvest_strategy(
             strategy, token, gov, profit_whale, profit_amount, target
         )
 
+    # passing gov as 9 means this is a permissionless keeper harvest (and we already called strategy.harvest beforehand)
     if gov == 9:
         extra = trade_handler_action(
             strategy, token, gov, profit_whale, profit_amount, target
@@ -136,6 +138,12 @@ def trade_handler_action(
     else:
         fxn = Contract(strategy.fxn(), abi="abis/IERC20.json")
         fxnBalance = fxn.balanceOf(strategy)
+
+        crv = Contract(strategy.crv(), abi="abis/IERC20.json")
+        crvBalance = crv.balanceOf(strategy)
+
+        cvx = Contract(strategy.convexToken(), abi="abis/IERC20.json")
+        cvxBalance = cvx.balanceOf(strategy)
 
     if crvBalance > 0:
         crv.transfer(token, crvBalance, sender=strategy)
