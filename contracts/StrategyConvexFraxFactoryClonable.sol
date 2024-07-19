@@ -549,8 +549,7 @@ contract StrategyConvexFraxFactoryClonable is BaseStrategy {
                 // Need to check that there is enough liquidity to withdraw so we dont report loss thats not true
                 if (lastDeposit + lockTime > block.timestamp) {
                     require(
-                        _stakedBal - stillLockedStake() >=
-                            _neededFromStaked,
+                        _stakedBal - stillLockedStake() >= _neededFromStaked,
                         "Need to wait until oldest deposit unlocks"
                     );
                 }

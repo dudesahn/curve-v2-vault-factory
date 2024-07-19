@@ -64,7 +64,7 @@ def which_strategy():
     # prisma convex: 2
     # fxn convex: 3
     # frax convex: 4
-    which_strategy = 2
+    which_strategy = 4
     yield which_strategy
 
 
@@ -74,7 +74,7 @@ def which_strategy():
 
 @pytest.fixture(scope="session")
 def token_string():
-    id_number = 0
+    id_number = 4
     token_string = "ERROR"
     if id_number == 0:
         token_string = "yPRISMA"  # working 7/14/24 w/ 2 (prisma, ape)
