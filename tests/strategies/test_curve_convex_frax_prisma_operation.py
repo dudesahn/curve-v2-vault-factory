@@ -1844,6 +1844,158 @@ def test_keks_add_to_existing(
     assert vault.totalAssets() == 0
 
 
+# use only a single kek, make sure we can deposit/withdraw it even after we've emptied the strategy
+def test_keks_single_kek_empty(
+    gov,
+    token,
+    vault,
+    strategist,
+    whale,
+    strategy,
+    gauge,
+    voter,
+    amount,
+    sleep_time,
+    is_slippery,
+    no_profit,
+    crv,
+    booster,
+    pid,
+    which_strategy,
+    profit_amount,
+    profit_whale,
+    use_yswaps,
+    trade_factory,
+    new_proxy,
+    convex_token,
+    frax_pid,
+    target,
+):
+    if which_strategy != 4:
+        return
+
+    # set it so we don't add new keks and only deposit to existing ones, once we reach our max
+    strategy.setDepositParams(10**18, 5_000_000 * 10**18, True, sender=gov)
+    strategy.setMaxKeks(1, sender=gov)
+
+    # since we do so many harvests here, reduce our profit_amount
+    profit_amount = int(profit_amount / 2.5)
+
+    ## deposit to the vault after approving
+    startingWhale = token.balanceOf(whale)
+    token.approve(vault, 2**256 - 1, sender=whale)
+    vault.deposit(int(amount), sender=whale)
+    new_whale = token.balanceOf(whale)
+    (profit, loss, extra) = harvest_strategy(
+        use_yswaps,
+        strategy,
+        token,
+        gov,
+        profit_whale,
+        profit_amount,
+        target,
+    )
+
+    locked = strategy.stillLockedStake() / 1e18
+    print("Locked stake before sleep:", locked)
+
+    # can't withdraw right now
+    with ape.reverts("revert: Need to wait until oldest deposit unlocks"):
+        vault.withdraw(sender=whale)
+
+    increase_time(chain, 7 * 86400)
+
+    locked = strategy.stillLockedStake() / 1e18
+    print("Locked stake after sleep:", locked)
+
+    (profit, loss, extra) = harvest_strategy(
+        use_yswaps,
+        strategy,
+        token,
+        gov,
+        profit_whale,
+        profit_amount,
+        target,
+    )
+
+    if use_yswaps:
+        (profit, loss, extra) = harvest_strategy(
+            use_yswaps,
+            strategy,
+            token,
+            gov,
+            profit_whale,
+            profit_amount,
+            target,
+        )
+
+    assert profit > 0
+
+    # sleep to unlock all profit
+    increase_time(chain, 5 * 86400)
+
+    # whale should be able to withdraw all of his funds now
+    vault.withdraw(sender=whale)
+    newer_whale = token.balanceOf(whale)
+    assert newer_whale > new_whale
+    assert vault.totalAssets() == 0
+
+    # only our profit_amount should be stuck in the strategy
+    assert strategy.estimatedTotalAssets() == profit_amount
+
+    # sleep a day, whale deposits again!
+    increase_time(chain, 86400)
+    vault.deposit(int(amount), sender=whale)
+
+    (profit, loss, extra) = harvest_strategy(
+        use_yswaps,
+        strategy,
+        token,
+        gov,
+        profit_whale,
+        profit_amount,
+        target,
+    )
+    assert vault.totalAssets() > 0
+    assert strategy.estimatedTotalAssets() > profit_amount
+    assert strategy.stillLockedStake() == 0
+
+    # sleep a day, then harvest
+    increase_time(chain, 86400)
+
+    (profit, loss, extra) = harvest_strategy(
+        use_yswaps,
+        strategy,
+        token,
+        gov,
+        profit_whale,
+        profit_amount,
+        target,
+    )
+    assert strategy.stillLockedStake() == 0
+
+    if use_yswaps:
+        (profit, loss, extra) = harvest_strategy(
+            use_yswaps,
+            strategy,
+            token,
+            gov,
+            profit_whale,
+            profit_amount,
+            target,
+        )
+
+    # sleep 4.5 days to fully realize our profits, but within the "normal" 7-day lock to prove we still don't lock again
+    assert profit > 0
+    increase_time(chain, int(4.5 * 86400))
+    vault.withdraw(sender=whale)
+
+    newest_whale = token.balanceOf(whale)
+    assert newest_whale > newer_whale
+    assert vault.totalAssets() == 0
+    assert strategy.estimatedTotalAssets() == profit_amount
+
+
 def test_yprisma_claim(
     gov,
     token,
