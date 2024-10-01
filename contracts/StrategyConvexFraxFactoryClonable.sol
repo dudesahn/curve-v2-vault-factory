@@ -284,7 +284,7 @@ contract StrategyConvexFraxFactoryClonable is BaseStrategy {
         creditThreshold = 50_000e18;
 
         // setup our default frax LP management vars
-        kekInfo.maxKeks = 5;
+        kekInfo.maxKeks = 1;
         lockTime = stakingAddress.lock_time_min(); // default to current minimum
         depositInfo.maxSingleDeposit = 500_000e18;
         depositInfo.minDeposit = 100e18;
